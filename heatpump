@@ -139,22 +139,22 @@ elif [[ $1 = "status" ]]; then
 #
 # getFaultDataByDeviceCode doesn't exists
 #
-#	if [[ $is_fault = "true" ]];then
-#		curl -s -H "Content-Type: application/json; charset=utf-8" \
-#		-H "x-token: $token" \
-#		-d '{"deviceCode":"'$device'"}' \
-#		-X POST $cloudurl/app/device/getFaultDataByDeviceCode.json > $path/tmp/fault
-#		error_msg=`cat $path/tmp/fault | jq -r '.objectResult[]."description"'`
-#		mosquitto_pub -r -h $mqtt -p $mqttport  \
-#			-m "${error_msg}" \
-#			-t "homeassistant/sensor/"$name"_error_msg/state"
-#
-#	elif [[ $is_fault = "false" ]];then
-#		error_msg="No Error"
-#		mosquitto_pub -r -h $mqtt -p $mqttport  \
-#			-m "${error_msg}" \
-#			-t "homeassistant/sensor/"$name"_error_msg/state"
-#	fi
+	if [[ $is_fault = "true" ]];then
+		curl -s -H "Content-Type: application/json; charset=utf-8" \
+		-H "x-token: $token" \
+		-d '{"deviceCode":"'$device'"}' \
+		-X POST $cloudurl/app/device/getFaultDataByDeviceCode?lang=en > $path/tmp/fault
+		error_msg=`cat $path/tmp/fault | jq -r '.objectResult[]."description"' | head -n 1`
+		mosquitto_pub -r -h $mqtt -p $mqttport  \
+			-m "${error_msg}" \
+			-t "homeassistant/sensor/"$name"_error_msg/state"
+
+	elif [[ $is_fault = "false" ]];then
+		error_msg="No Error"
+		mosquitto_pub -r -h $mqtt -p $mqttport  \
+			-m "${error_msg}" \
+			-t "homeassistant/sensor/"$name"_error_msg/state"
+	fi
 	
 	status()
 	{

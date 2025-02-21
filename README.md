@@ -28,8 +28,7 @@ Poll intervall for the app is 20s, so i recommend to not set this to lower value
 ## TODO
 - No idea about password hash mechanism yes - hash taken from wireshark and use as a password in settings
 - Some parameters doesn't exists, there are others which are not covered yet
-- No idea what should be used instead getFaultDataByDeviceCode (comment out for now)
-- climate.my_heatpump doesn't work 
+- Changing temperature not solved 
 
 ![plot](./example.png)
 
