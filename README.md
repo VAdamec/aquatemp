@@ -26,7 +26,9 @@ Poll intervall for the app is 20s, so i recommend to not set this to lower value
 - API calls from iOS app wireshark data, object camelcased, different auth URI, ...
 
 ## TODO
-- No idea about password hash mechanism yes - hash taken from wireshark and use as a password in settings
+~~- No idea about password hash mechanism yes - hash taken from wireshark and use as a password in settings~~
+ - 
+	```echo -n "YOURPASSWORD" | openssl dgst -md5 | awk '{print $2}'```
 - Some parameters doesn't exists, there are others which are not covered yet
 - Changing temperature via shell script - see `HASS_script_only.md`
 
