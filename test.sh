@@ -7,8 +7,7 @@
 
 cloudurl="https://cloud.linked-go.com:449/crmservice/api/app"
 login=$1
-# From app, it's not base64, hash ?
-pass=$2
+pass=$(echo -n "${2}" | openssl dgst -md5 | awk '{print $2}')
 
 token=$(curl -s -H "Content-Type: application/json; charset=utf-8" -X POST \
   -d '{"password": "'$pass'","loginSource": "IOS","areaCode": "en","appId": "16","type": "2","userName": "'$login'"}' \

@@ -4,10 +4,10 @@
 
 path=`dirname "$0":`
 username=`cat $path/settings | grep username | cut -f2`
-password=`cat $path/settings | grep password | cut -f2`
+password=`cat $path/settings | grep password | cut -f2 | openssl dgst -md5 | awk '{print $2}'`
 mqtt=`cat $path/settings | grep mqttserver | cut -f2`
-mqttuser=`cat $path/settings | grep mqttuser | cut -f2`
-mqttpass=`cat $path/settings | grep mqttpass | cut -f2`
+#mqttuser=`cat $path/settings | grep mqttuser | cut -f2`
+#mqttpass=`cat $path/settings | grep mqttpass | cut -f2`
 mqttport=`cat $path/settings | grep mqttport | cut -f2`
 cloudurl="https://cloud.linked-go.com:449/crmservice/api"
 name=`cat $path/settings | grep hassname | cut -f2`
@@ -27,9 +27,13 @@ device=`curl -s -H "Content-Type: application/json; charset=utf-8" \
 echo $device > $path/tmp/device
 }
 
+if [ -f $path/tmp/token ];then
 check=`find $path/tmp/token -mmin -1440 | wc -l`
-if [[ $check -lt "1" ]]; then
-        update
+  if [[ $check -lt "1" ]]; then
+    update
+  fi
+else
+    update
 fi
 
 token=`cat $path/tmp/token`
@@ -80,6 +84,7 @@ if [[ $1 = "install" ]]; then
 	install_dt sensor "Ambient" ambient temperature °C
 	install_dt sensor "Coil" coil temperature °C
 	install_dt sensor "Suction" suction temperature °C
+	install_dt sensor "Current" current
 
 	mosquitto_pub -r -h $mqtt -p $mqttport  \
 		-t "homeassistant/switch/"$name"_silent/config" \
@@ -97,7 +102,7 @@ if [[ $1 = "install" ]]; then
 			"temperature_state_topic":"homeassistant/sensor/'$name'_readtemp/state",
 			"temperature_unit":"C",
 			"min_temp":"15",
-			"max_temp":"35",
+			"max_temp":"55",
 			"temp_step":"0.5",
 			"modes":["off", "heat", "cool", "auto"]}'
 
@@ -124,6 +129,7 @@ elif [[ $1 = "uninstall" ]]; then
 	uninstall sensor coil
 	uninstall sensor suction
 	uninstall switch silent
+	uninstall sensor current
 
 	mosquitto_pub -r -h $mqtt -p $mqttport  -m '' -t "homeassistant/climate/$name/config"
 
@@ -182,7 +188,7 @@ elif [[ $1 = "info" ]]; then
 	-X POST $cloudurl/app/device/getDataByCode?lang=en > $path/tmp/info
 
 	power=`cat $path/tmp/info | jq '.objectResult[] | select(.code=="Power")' | jq -r '.value'`
-	readtemp=`cat $path/tmp/info | jq '.objectResult[] | select(.code=="Set_Temp")' | jq -r '.value'`
+	readtemp=`cat $path/tmp/info | jq '.objectResult[] | select(.code=="R02")' | jq -r '.value'`
 	suctiontemp=`cat $path/tmp/info | jq '.objectResult[] | select(.code=="T01")' | jq -r '.value'`
 	inlettemp=`cat $path/tmp/info | jq '.objectResult[] | select(.code=="T02")' | jq -r '.value'`
 	outlettemp=`cat $path/tmp/info | jq '.objectResult[] | select(.code=="T03")' | jq -r '.value'`
@@ -190,7 +196,7 @@ elif [[ $1 = "info" ]]; then
 	ambienttemp=`cat $path/tmp/info | jq '.objectResult[] | select(.code=="T05")' | jq -r '.value'`
 	mode=`cat $path/tmp/info | jq '.objectResult[] | select(.code=="Mode")' | jq -r '.value'`
 	silent=`cat $path/tmp/info | jq '.objectResult[] | select(.code=="Manual-mute")' | jq -r '.value'`
-
+	current=`cat $path/tmp/info | jq '.objectResult[] | select(.code=="InputCurrent1")' | jq -r '.value'`
 
 mosquitto_status()
 {
@@ -205,6 +211,7 @@ mosquitto_status()
 	mosquitto_status sensor $ambienttemp ambient
 	mosquitto_status sensor $coiltemp coil
 	mosquitto_status sensor $suctiontemp suction
+	mosquitto_status sensor $current current
 
 	if [[ $silent = "0" ]];then
 
@@ -242,7 +249,7 @@ elif [[ $1 = "temp" ]]; then
 	temp=$2
 	curl -s -H "Content-Type: application/json; charset=utf-8" \
 	-H "x-token: $token" \
-	-d '{"param":[{"deviceCode":"'$device'","protocolCode":"R02","value":"'$temp'"},{"deviceCode":"'$device'","protocolCode":"Set_Temp","value":"'$temp'"}]}' \
+	-d '{"param":[{"deviceCode":"'$device'","protocolCode":"R02","value":"'$temp'"},{"deviceCode":"'$device'","protocolCode":"R02","value":"'$temp'"}]}' \
 	-X POST $cloudurl/app/device/control?lang=en
 
 elif [[ $1 = "silent" ]]; then
