@@ -42,3 +42,94 @@ Poll intervall for the app is 20s, so i recommend to not set this to lower value
   
 ![plot](./example.png)
 
+# Automation based on EGD power tarif
+- NT/VT
+
+## Show in dashboard
+```shell
+type: entities
+entities:
+  - entity: input_text.jakyjetarif
+    secondary_info: none
+    icon: mdi:currency-usd
+  - entity: timer.odpocet_vysokeho_tarifu
+state_color: false
+visibility:
+  - condition: state
+    entity: input_text.jakyjetarif
+    state: VT
+theme: LCARS 25C (Red Alert)
+```
+
+![plot](./alert.png)
+
+## NT
+```bash
+alias: HDO tarify - NT
+description: ""
+triggers:
+  - trigger: time
+    at: "00:00:00"
+  - trigger: time
+    at: "10:00:00"
+  - trigger: time
+    at: "13:00:00"
+  - trigger: time
+    at: "17:00:00"
+  - trigger: time
+    at: "21:00:00"
+actions:
+  - action: input_text.set_value
+    metadata: {}
+    data:
+      value: NT
+    target:
+      entity_id: input_text.jakyjetarif
+  - action: climate.set_temperature
+    metadata: {}
+    data:
+      temperature: 35
+    target:
+      entity_id: climate.my_heatpump
+mode: single
+variables:
+  tariff: NT
+```
+
+## VT
+```bash
+alias: HDO tarify - VT
+description: ""
+triggers:
+  - trigger: time
+    at: "9:00:00"
+  - trigger: time
+    at: "12:00:00"
+  - trigger: time
+    at: "16:00:00"
+  - trigger: time
+    at: "20:00:00"
+conditions: []
+actions:
+  - action: input_text.set_value
+    metadata: {}
+    data:
+      value: VT
+    target:
+      entity_id: input_text.jakyjetarif
+  - action: timer.start
+    metadata: {}
+    data:
+      duration: "1:0:0"
+    target:
+      entity_id: timer.odpocet_vysokeho_tarifu
+  - action: climate.set_temperature
+    metadata: {}
+    data:
+      temperature: 25
+    target:
+      entity_id: climate.my_heatpump
+mode: single
+variables:
+  tariff: VT
+```
