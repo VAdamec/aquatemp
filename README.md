@@ -9,7 +9,7 @@ first run
 
 1.	edit settings file for your needs
 2.	./heatpump install
-~~3.	add control.sh and status.sh to systemd
+3. ~~add control.sh and status.sh to systemd
 	(you could use the script "setup_systemd install" to add and enable the service "ubuntu"
 	the service name will be aquatemp_control and aquatemp_status)~~
 
@@ -24,13 +24,21 @@ Poll intervall for the app is 20s, so i recommend to not set this to lower value
 
 # Warmlink update
 - API calls from iOS app wireshark data, object camelcased, different auth URI, ...
+- run in term/ssh on HASS (need to be rerun if restarted)
+    ```shell
+	 nohup ./status.sh &
+	 nohup ./control.sh &
+	```
+  - status.sh read data from cloud and store them in MQTT, calling heatpump script
+  - control.sh read MQTT and change temp/mode when changed, calling heatpump script with specific commands
 
 ## TODO
- - ~~No idea about password hash mechanism yes - hash taken from wireshark and use as a password in settings~~
-
-	```echo -n "YOURPASSWORD" | openssl dgst -md5 | awk '{print $2}'```
 - Some parameters doesn't exists, there are others which are not covered yet
-- Changing temperature via shell script - see `HASS_script_only.md`
-
+ - ~~No idea about password hash mechanism yes - hash taken from wireshark and use as a password in settings~~
+	- ```echo -n "YOURPASSWORD" | openssl dgst -md5 | awk '{print $2}'```
+- ~~Changing temperature via shell script - see `HASS_script_only.md`~~
+- ~~Busybox grep is not working properly/not GNU~~
+  - replaced by perl regexp
+  
 ![plot](./example.png)
 

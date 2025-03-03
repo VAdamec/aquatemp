@@ -16,15 +16,14 @@ mkdir -p $path/tmp
 
 update()
 {
-token=$(curl -s -H "Content-Type: application/json; charset=utf-8" -X POST \
+  token=$(curl -s -H "Content-Type: application/json; charset=utf-8" -X POST \
   -d '{"password": "'$password'","loginSource": "IOS","areaCode": "en","appId": "16","type": "2","userName": "'$username'"}' \
   "${cloudurl}/app/user/login?lang=en" | jq -r '.objectResult."x-token"')
-echo $token > $path/tmp/token
+  echo $token > $path/tmp/token
 
-device=`curl -s -H "Content-Type: application/json; charset=utf-8" \
-	-H "x-token: $token" -X POST $cloudurl/app/device/deviceList?lang=en |
-	jq -r '.objectResult[]."deviceCode"'`
-echo $device > $path/tmp/device
+  device=$(curl -s -H "Content-Type: application/json; charset=utf-8" \
+	-H "x-token: $token" -X POST $cloudurl/app/device/deviceList?lang=en | jq -r '.objectResult[]."deviceCode"')
+  echo $device > $path/tmp/device
 }
 
 if [ -f $path/tmp/token ];then
@@ -35,10 +34,6 @@ check=`find $path/tmp/token -mmin -1440 | wc -l`
 else
     update
 fi
-
-token=`cat $path/tmp/token`
-device=`cat $path/tmp/device`
-
 
 power()
 {
