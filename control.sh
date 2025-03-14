@@ -1,6 +1,8 @@
 #!/bin/bash
 path=$(dirname "$0":)
 mqtt=$(grep mqttserver "${path}"/settings | cut -f2)
+mqttuser=`cat $path/settings | grep mqttuser | cut -f2`
+mqttpass=`cat $path/settings | grep mqttpass | cut -f2`
 mqttport=$(grep mqttport "${path}"/settings | cut -f2)
 name=$(grep hassname "${path}"/settings | cut -f2)
 
@@ -9,7 +11,7 @@ check()
 "${path}"/heatpump info
 }
 
-mosquitto_sub -v -R -h "${mqtt}" -p "${mqttport}" -t homeassistant/# | while read line
+mosquitto_sub -v -R -h "${mqtt}" -p "${mqttport}" -u "$mqttuser" -P "$mqttpass" -t homeassistant/# | while read line
 do
 	settemp=$(echo "${line}" | perl -lne '/my_heatpump_settemp\/state\s([0-9]*)/ and print ${1}')
 	mode=$(echo "${line}" | perl -lne '/my_heatpump_mode_set\/state\s([0-9]*)/ and print ${1}')
