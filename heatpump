@@ -73,6 +73,7 @@ if [[ $1 = "install" ]]; then
 	install binary_sensor "Silent" silent
 	install_dt sensor "Settemp" settemp temperature °C
 	install_dt sensor "Readtemp" readtemp temperature °C
+	install_dt sensor "DWHtemp" dwhtemp temperature °C
 	install_dt sensor "Inlet" inlet temperature °C
 	install_dt sensor "Outlet" outlet temperature °C
 	install sensor "Mode State" mode_state 
@@ -128,6 +129,7 @@ elif [[ $1 = "uninstall" ]]; then
 	uninstall sensor suction
 	uninstall switch silent
 	uninstall sensor current
+	uninstall sensor dwhtemp
 
 	mosquitto_pub -r -h $mqtt -p $mqttport -u "$mqttuser" -P "$mqttpass" -m '' -t "homeassistant/climate/$name/config"
 
@@ -198,6 +200,7 @@ elif [[ $1 = "info" ]]; then
 	mode=`cat $path/tmp/info | jq '.objectResult[] | select(.code=="Mode")' | jq -r '.value'`
 	silent=`cat $path/tmp/info | jq '.objectResult[] | select(.code=="Manual-mute")' | jq -r '.value'`
 	current=`cat $path/tmp/info | jq '.objectResult[] | select(.code=="InputCurrent1")' | jq -r '.value'`
+	dwhtemp=`cat $path/tmp/info | jq '.objectResult[] | select(.code=="T08")' | jq -r '.value'`
 
 mosquitto_status()
 {
@@ -213,6 +216,7 @@ mosquitto_status()
 	mosquitto_status sensor $coiltemp coil
 	mosquitto_status sensor $suctiontemp suction
 	mosquitto_status sensor $current current
+	mosquitto_status sensor $dwhtemp dwhtemp
 
 	if [[ $silent = "0" ]];then
 
