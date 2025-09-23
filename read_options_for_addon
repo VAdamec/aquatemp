@@ -1,0 +1,31 @@
+#!/bin/bash
+
+# Ensure jq is available
+if ! command -v jq &> /dev/null
+then
+    echo "jq could not be found. Please ensure it is installed."
+    exit 1
+fi
+
+# The path to the configuration file provided by Home Assistant
+OPTIONS_FILE="/data/options.json"
+
+# Check if the file exists
+if [ ! -f "$OPTIONS_FILE" ]; then
+    echo "options.json not found. The add-on may not be configured."
+    exit 1
+fi
+
+# Read the values from the options.json file using jq
+warmlink_username=$(jq -r '.warmlink_username' "$OPTIONS_FILE")
+warmlink_password=$(jq -r '.warmlink_password' "$OPTIONS_FILE")
+mqtt_username=$(jq -r '.mqtt_username' "$OPTIONS_FILE")
+mqtt_password=$(jq -r '.mqtt_password' "$OPTIONS_FILE")
+
+# Use your variables in the script as needed
+echo "Warmlink Username: $warmlink_username"
+echo "MQTT Username: $mqtt_username"
+
+# --- The rest of your script logic goes here ---
+# Example: Use the credentials to publish to MQTT
+# Your MQTT publish command will use these variables.
