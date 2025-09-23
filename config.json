@@ -8,6 +8,16 @@
   "startup": "services",
   "boot": "auto",
   "init": false,
-  "options": {},
-  "schema": {}
+  "options": {
+    "warmlink_username": "your_username",
+    "warmlink_password": "",
+    "mqtt_username": "mqtt_username",
+    "mqtt_password": ""
+  },
+  "schema": {
+    "warmlink_username": "str",
+    "warmlink_password": "str",
+    "mqtt_username": "str",
+    "mqtt_password": "str"
+  }
 }
