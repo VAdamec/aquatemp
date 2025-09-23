@@ -1,0 +1,13 @@
+{
+  "name": "Warmlink Add-On",
+  "version": "1.0.0",
+  "slug": "ha-warmlink-addon",
+  "description": "Set of script which, via MQTT, allow Home Assistant to control and show metrics from Warmlink heatpumps",
+  "url": "https://github.com/VAdamec/aquatemp",
+  "arch": ["amd64", "i386"],
+  "startup": "services",
+  "boot": "auto",
+  "init": false,
+  "options": {},
+  "schema": {}
+}
