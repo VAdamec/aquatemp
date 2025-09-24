@@ -73,7 +73,6 @@ if [[ $1 = "install" ]]; then
 	install binary_sensor "Silent" silent
 	install_dt sensor "Settemp" settemp temperature °C
 	install_dt sensor "Readtemp" readtemp temperature °C
-	install_dt sensor "DWHtemp" dwhtemp temperature °C
 	install_dt sensor "Inlet" inlet temperature °C
 	install_dt sensor "Outlet" outlet temperature °C
 	install sensor "Mode State" mode_state 
@@ -84,7 +83,6 @@ if [[ $1 = "install" ]]; then
 	install_dt sensor "Coil" coil temperature °C
 	install_dt sensor "Suction" suction temperature °C
 	install_dt sensor "Current" current
-	install_dt sensor "Flow" flow
 
 	mosquitto_pub -r -h $mqtt -p $mqttport -u "$mqttuser" -P "$mqttpass" \
 		-t "homeassistant/switch/"$name"_silent/config" \
@@ -130,8 +128,6 @@ elif [[ $1 = "uninstall" ]]; then
 	uninstall sensor suction
 	uninstall switch silent
 	uninstall sensor current
-	uninstall sensor dwhtemp
-	uninstall sensor flow
 
 	mosquitto_pub -r -h $mqtt -p $mqttport -u "$mqttuser" -P "$mqttpass" -m '' -t "homeassistant/climate/$name/config"
 
@@ -202,9 +198,6 @@ elif [[ $1 = "info" ]]; then
 	mode=`cat $path/tmp/info | jq '.objectResult[] | select(.code=="Mode")' | jq -r '.value'`
 	silent=`cat $path/tmp/info | jq '.objectResult[] | select(.code=="Manual-mute")' | jq -r '.value'`
 	current=`cat $path/tmp/info | jq '.objectResult[] | select(.code=="InputCurrent1")' | jq -r '.value'`
-	dwhtemp=`cat $path/tmp/info | jq '.objectResult[] | select(.code=="T08")' | jq -r '.value'`
-	flow=`cat $path/tmp/info | jq '.objectResult[] | select(.code=="T39")' | jq -r '.value'`
-	echo "$flow vs $inlettemp vs $outlettemp"
 
 mosquitto_status()
 {
@@ -220,8 +213,6 @@ mosquitto_status()
 	mosquitto_status sensor $coiltemp coil
 	mosquitto_status sensor $suctiontemp suction
 	mosquitto_status sensor $current current
-	mosquitto_status sensor $dwhtemp dwhtemp
-	mosquitto_status sensor $flow flow
 
 	if [[ $silent = "0" ]];then
 
