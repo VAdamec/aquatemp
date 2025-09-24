@@ -9,15 +9,25 @@
   "boot": "auto",
   "init": false,
   "options": {
-    "warmlink_username": "your_username",
-    "warmlink_password": "",
-    "mqtt_username": "mqtt_username",
-    "mqtt_password": ""
+    "username": "user@user.com",
+    "password": "123456",
+    "cloudurl": "https://cloud.linked-go.com:449/crmservice/api",
+    "mqttuser": "none",
+    "mqttpass": "none",
+    "mqttserver": "192.168.1.1",
+    "mqttport": "1883",
+    "hassname": "my_heatpump",
+    "pollintv": "20"
   },
   "schema": {
-    "warmlink_username": "str",
-    "warmlink_password": "str",
-    "mqtt_username": "str",
-    "mqtt_password": "str"
+    "username": "str",
+    "password": "str",
+    "cloudurl": "str",
+    "mqttuser": "str",
+    "mqttpass": "str",
+    "mqttserver": "str",
+    "mqttport": "int",
+    "hassname": "str",
+    "pollintv": "int"
   }
 }

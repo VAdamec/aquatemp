@@ -1,16 +1,28 @@
 #!/bin/bash
 
-#Get setting etc
-
 path=`dirname "$0":`
-username=`cat $path/settings | grep username | cut -f2`
-password=`cat $path/settings | grep password | cut -f2`
-mqtt=`cat $path/settings | grep mqttserver | cut -f2`
-mqttuser=`cat $path/settings | grep mqttuser | cut -f2`
-mqttpass=`cat $path/settings | grep mqttpass | cut -f2`
-mqttport=`cat $path/settings | grep mqttport | cut -f2`
-cloudurl="https://cloud.linked-go.com:449/crmservice/api"
-name=`cat $path/settings | grep hassname | cut -f2`
+OPTIONS_FILE="/data/options.json"
+
+if ! command -v jq &> /dev/null
+then
+    echo "jq could not be found. Please ensure it is installed."
+    exit 1
+fi
+if [ ! -f "$OPTIONS_FILE" ]; then
+    echo "options.json not found. The add-on may not be configured."
+    exit 1
+fi
+
+username=$(jq -r '.username' "$OPTIONS_FILE")
+password=$(jq -r '.password' "$OPTIONS_FILE")
+cloudurl=$(jq -r '.cloudurl' "$OPTIONS_FILE")
+
+mqtt=$(jq -r '.mqttserver' "$OPTIONS_FILE")
+mqttuser=$(jq -r '.mqttuser' "$OPTIONS_FILE")
+mqttpass=$(jq -r '.mqttpass' "$OPTIONS_FILE")
+mqttport=$(jq -r '.mqttport' "$OPTIONS_FILE")
+
+name=$(jq -r '.hassname' "$OPTIONS_FILE")
 
 mkdir -p $path/tmp
 
