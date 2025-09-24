@@ -40,7 +40,7 @@ Poll intervall for the app is 20s, so i recommend to not set this to lower value
 - ~~Busybox grep is not working properly/not GNU~~
   - replaced by perl regexp
   
-![plot](./example.png)
+![plot](assets/example.png)
 
 # Automation based on EGD power tarif
 - NT/VT
@@ -61,7 +61,7 @@ visibility:
 theme: LCARS 25C (Red Alert)
 ```
 
-![plot](./alert.png)
+![plot](assets/alert.png)
 
 ## NT
 ```bash
