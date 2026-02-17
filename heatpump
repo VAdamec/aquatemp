@@ -200,7 +200,7 @@ elif [[ $1 = "info" ]]; then
 	mode=`cat $path/tmp/info | jq '.objectResult[] | select(.code=="Mode")' | jq -r '.value'`
 	silent=`cat $path/tmp/info | jq '.objectResult[] | select(.code=="Manual-mute")' | jq -r '.value'`
 	current=`cat $path/tmp/info | jq '.objectResult[] | select(.code=="InputCurrent1")' | jq -r '.value'`
-	dwhtemp=`cat $path/tmp/info | jq '.objectResult[] | select(.code=="T08")' | jq -r '.value'`
+	dwhtemp=`cat $path/tmp/info | jq '.objectResult[] | select(.code=="R01")' | jq -r '.value'`
 
 mosquitto_status()
 {
