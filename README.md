@@ -33,6 +33,7 @@ Poll intervall for the app is 20s, so i recommend to not set this to lower value
   - control.sh read MQTT and change temp/mode when changed, calling heatpump script with specific commands
 
 ## TODO
+- Sanitation period, from time to time HP set 50C+ temperature to clean up, but it usually hits high power tarrif - need to be able to set it out in HA based on tarifs
 - Some parameters doesn't exists, there are others which are not covered yet
  - ~~No idea about password hash mechanism yes - hash taken from wireshark and use as a password in settings~~
 	- ```echo -n "YOURPASSWORD" | openssl dgst -md5 | awk '{print $2}'```
