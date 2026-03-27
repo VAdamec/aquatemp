@@ -1,290 +1,630 @@
 #!/bin/bash
 
-#Get setting etc
+set -euo pipefail
 
-path=`dirname "$0":`
-username=`cat $path/settings | grep username | cut -f2`
-password=`cat $path/settings | grep password | cut -f2`
-mqtt=`cat $path/settings | grep mqttserver | cut -f2`
-mqttuser=`cat $path/settings | grep mqttuser | cut -f2`
-mqttpass=`cat $path/settings | grep mqttpass | cut -f2`
-mqttport=`cat $path/settings | grep mqttport | cut -f2`
+path="$(cd "$(dirname "$0")" && pwd)"
+settings_file="$path/settings"
+cache_dir="$path/tmp"
+token_file="$cache_dir/token"
+device_file="$cache_dir/device"
+info_file="$cache_dir/info"
+status_file="$cache_dir/status"
+fault_file="$cache_dir/fault"
+test_file="$cache_dir/test"
+protocol_codes_file="$path/protocol_codes.txt"
 cloudurl="https://cloud.linked-go.com:449/crmservice/api"
-name=`cat $path/settings | grep hassname | cut -f2`
+app_id="16"
+lang="en"
 
-mkdir -p $path/tmp
-
-update()
+setting()
 {
-  token=$(curl -s -H "Content-Type: application/json; charset=utf-8" -X POST \
-  -d '{"password": "'$password'","loginSource": "IOS","areaCode": "en","appId": "16","type": "2","userName": "'$username'"}' \
-  "${cloudurl}/app/user/login?lang=en" | jq -r '.objectResult."x-token"')
-  echo $token > $path/tmp/token
-
-  device=$(curl -s -H "Content-Type: application/json; charset=utf-8" \
-	-H "x-token: $token" -X POST $cloudurl/app/device/deviceList?lang=en | jq -r '.objectResult[]."deviceCode"')
-  echo $device > $path/tmp/device
+	awk -F '\t' -v key="$1" '$1 == key { print $2; exit }' "$settings_file"
 }
 
-if [ -f $path/tmp/token ];then
-check=`find $path/tmp/token -mmin -1440 | wc -l`
-  if [[ $check -lt "1" ]]; then
-    update
-  else
-    token=$(cat $path/tmp/token)
-    device=$(cat $path/tmp/device)
-  fi
-else
-    update
-fi
-
-power()
+require_setting()
 {
-	curl -s -H "Content-Type: application/json; charset=utf-8" \
-	-H "x-token: $token" \
-	-d '{"param":[{"deviceCode":"'$device'","protocolCode":"Power","value":"'$1'"}]}' \
-	-X POST $cloudurl/app/device/control?lang=en
+	local value="$1"
+	local key="$2"
+
+	if [[ -z "$value" ]]; then
+		echo "Missing $key in $settings_file" >&2
+		exit 1
+	fi
 }
 
-#Install entities to Hass
-if [[ $1 = "install" ]]; then
-	echo install
-
-	install()
-	{
-	mosquitto_pub -r -h $mqtt -p $mqttport -u "$mqttuser" -P "$mqttpass" \
-		-t "homeassistant/$1/"$name"_"$3"/config" \
-		-m '{"name": "'$name' '"$2"'", 
-			"state_topic": "homeassistant/'$1'/'$name'_'$3'/state"}'
-	}
-
-	install_dt()
-	{
-	mosquitto_pub -r -h $mqtt -p $mqttport -u "$mqttuser" -P "$mqttpass" \
-		-t "homeassistant/$1/"$name"_"$3"/config" \
-		-m '{"name": "'$name' '"$2"'", 
-			"device_class": "'$4'", 
-			"unit_of_measurement": "'$5'", 
-			"state_topic": "homeassistant/'$1'/'$name'_'$3'/state"}'
-	}
-
-	install sensor "Status" status
-	install binary_sensor "Power" power
-	install binary_sensor "Silent" silent
-	install_dt sensor "Settemp" settemp temperature °C
-	install_dt sensor "Readtemp" readtemp temperature °C
-	install_dt sensor "Inlet" inlet temperature °C
-	install_dt sensor "Outlet" outlet temperature °C
-	install sensor "Mode State" mode_state 
-	install sensor "Mode Set" mode_set 
-	install sensor "Error msg" error_msg
-	install sensor "Is fault" is_fault
-	install_dt sensor "Ambient" ambient temperature °C
-	install_dt sensor "Coil" coil temperature °C
-	install_dt sensor "Suction" suction temperature °C
-	install_dt sensor "Current" current
-
-	mosquitto_pub -r -h $mqtt -p $mqttport -u "$mqttuser" -P "$mqttpass" \
-		-t "homeassistant/switch/"$name"_silent/config" \
-		-m '{"name": "'$name' Silent",
-			"command_topic": "homeassistant/switch/'$name'_silent/set",
-			"state_topic": "homeassistant/binary_sensor/'$name'_silent/state"}'
-
-	mosquitto_pub -r -h $mqtt -p $mqttport -u "$mqttuser" -P "$mqttpass" \
-		-t "homeassistant/climate/$name/config" \
-		-m '{"name":"'$name'",
-			"current_temperature_topic":"homeassistant/sensor/'$name'_inlet/state",
-			"mode_command_topic":"homeassistant/sensor/'$name'_mode_set/state",
-			"mode_state_topic":"homeassistant/sensor/'$name'_mode_state/state",
-			"temperature_command_topic":"homeassistant/sensor/'$name'_settemp/state",
-			"temperature_state_topic":"homeassistant/sensor/'$name'_readtemp/state",
-			"temperature_unit":"C",
-			"min_temp":"15",
-			"max_temp":"55",
-			"temp_step":"0.5",
-			"modes":["off", "heat", "cool", "auto"]}'
-
-#uninstall entities from Hass
-elif [[ $1 = "uninstall" ]]; then
-	echo uninstall
-	uninstall()
-	{
-		mosquitto_pub -r -h $mqtt -p $mqttport -u "$mqttuser" -P "$mqttpass" -m '' -t "homeassistant/"$1"/"$name"_"$2"/config"
-	}
-	uninstall sensor status
-	uninstall binary_sensor Power
-	uninstall binary_sensor silent
-	uninstall sensor settemp
-	uninstall sensor inlet
-	uninstall sensor outlet
-	uninstall sensor mode_state
-	uninstall sensor mode_set
-	uninstall sensor settemp
-	uninstall sensor readtemp
-	uninstall sensor error_msg
-	uninstall sensor is_fault
-	uninstall sensor ambient
-	uninstall sensor coil
-	uninstall sensor suction
-	uninstall switch silent
-	uninstall sensor current
-
-	mosquitto_pub -r -h $mqtt -p $mqttport -u "$mqttuser" -P "$mqttpass" -m '' -t "homeassistant/climate/$name/config"
-
-elif [[ $1 = "status" ]]; then
-
-  echo "Status: ${device} - ${token}"
-
-	curl -s -H "Content-Type: application/json; charset=utf-8" \
-	-H "x-token: $token" \
-	-d '{"deviceCode":"'$device'"}' \
-	-X POST $cloudurl/app/device/getDeviceStatus?lang=en > $path/tmp/status
-
-	online=`cat $path/tmp/status | jq -r '.objectResult."status"'`
-	is_fault=`cat $path/tmp/status | jq -r '.objectResult."is_fault"'`
-
-#
-# getFaultDataByDeviceCode doesn't exists
-#
-	if [[ $is_fault = "true" ]];then
-		curl -s -H "Content-Type: application/json; charset=utf-8" \
-		-H "x-token: $token" \
-		-d '{"deviceCode":"'$device'"}' \
-		-X POST $cloudurl/app/device/getFaultDataByDeviceCode?lang=en > $path/tmp/fault
-		error_msg=`cat $path/tmp/fault | jq -r '.objectResult[]."description"' | head -n 1`
-		mosquitto_pub -r -h $mqtt -p $mqttport -u "$mqttuser" -P "$mqttpass"  \
-			-m "${error_msg}" \
-			-t "homeassistant/sensor/"$name"_error_msg/state"
-
-	elif [[ $is_fault = "false" ]];then
-		error_msg="No Error"
-		mosquitto_pub -r -h $mqtt -p $mqttport -u "$mqttuser" -P "$mqttpass"  \
-			-m "${error_msg}" \
-			-t "homeassistant/sensor/"$name"_error_msg/state"
-	fi
-	
-	status()
-	{
-	mosquitto_pub -r -h $mqtt -p $mqttport -u "$mqttuser" -P "$mqttpass"  \
-		-m "${1}" \
-		-t "homeassistant/sensor/"$name"_"$2"/state"
-	}
-
-	status $online status
-	status $is_fault is_fault
-
-elif [[ $1 = "test" ]]; then
-	curl -s -H "Content-Type: application/json; charset=utf-8" \
-	-H "x-token: $token" \
-	-d '{"deviceCode":"'$device'","protocolCode":["'$2'"]}' \
-	-X POST $cloudurl/app/device/getDataByCode?lang=en > $path/tmp/test
-	cat $path/tmp/test
-
-
-elif [[ $1 = "info" ]]; then
-	echo info
-	curl -s -H "Content-Type: application/json; charset=utf-8" \
-	-H "x-token: $token" \
-	-d '{"deviceCode":"'$device'","appId": "16","protocalCodes":["Power", "Mode", "ModeState", "O01~014", "O01~023", "H21", "R01", "R02", "R03", "T39", "T04", "T01", "T08", "T09", "T02", "H25", "H28", "H31", "H22", "hanControl", "R08", "R09", "R10", "R11", "R36", "R37", "R70", "R71", "R72", "R73", "R74", "H01", "H05", "MainBoard Version", "code_version", "R35", "H07", "H10", "H18", "H20", "H27", "H29", "H30", "H32", "H33", "H35", "H36", "H37", "H40", "H41", "H42", "H43", "H45", "A03", "A04", "A05", "A06", "A11", "A21", "A22", "A23", "A24", "A25", "A26", "A27", "A28", "A29", "A30", "A31", "A32", "A33", "A34", "A35", "A38", "A39", "A40", "F01", "F02", "F03", "F05", "F06", "F10", "F18", "F19", "F21", "F22", "F23", "F25", "F26", "F27", "F28", "F29", "D01", "D02", "D03", "D04", "D05-1", "D05-2", "D07", "D08", "D09", "D10", "D11", "D12", "D13", "D14", "D15", "D16", "D17", "D18", "D19", "D20", "D21", "D22", "D23", "D24", "D25", "D26", "D30", "E01", "E02", "E03", "E07", "E08", "E09", "E10", "E13", "E14", "E17", "E18", "E19", "E03-1", "E03-2", "E03-3", "E03-4", "E03-5", "E07-1", "E07-2", "E07-3", "E07-4", "E07-5", "R04", "R05", "R06", "R07", "R15", "R16", "R17", "R29", "R30", "R31", "R32", "R33", "R34", "R39", "R40", "R41", "R42", "R43", "R44", "R45", "R46", "R60", "R61", "R62", "P01", "P02", "P03", "P05", "P06", "P08", "P09", "P10", "P11", "P12", "P13", "P14", "P15", "P16", "G01", "G02", "G03", "G04", "G05", "C01", "C02", "C03", "C04", "C05", "C06", "C07", "C08", "C09", "C10", "C11", "C12", "O15", "O17", "S01~S10", "T03", "T05", "T06", "T07", "T13", "T15", "T10", "T11", "T12", "T27", "T28", "T29", "T30", "T31", "T32", "T33", "T34", "T35", "T36", "T37", "T38", "T40", "T41", "T42", "T43", "T44", "T46", "T47", "T48", "Fault1", "Fault5", "Fault6", "1250", "1256", "1257", "1258", "1259", "1260", "1261", "1262", "1263", "1264", "1265", "1266", "1267", "1268", "1269", "KG1", "KG2", "KG3", "KG4", "KG5", "KG6", "KG7", "KG8", "KG9", "KG10", "KG11", "KG12", "KG13~KG28", "KG29~KG44", "KG45~KG60", "Timer_Mute_On_En", "TimerMuteOnHour", "TimerMuteOnMinute", "Timer_Mute_Off_En", "TimerMuteOffHour", "TimerMuteOffMinute", "2014", "compensate_slope", "compensate_offset", "InputCurrent1", "Z01", "Z17", "Zone 2 Water Target", "Zone 2 Cure Slope", "Zone 2 Curve Offset", "Zone 1 Room Temp", "Zone 2 Room Temp", "Zone 2 Mixing Temp", "Z02", "Z03", "Z05", "Z06", "Z04", "Z07", "Z08", "Z09", "Z10", "Z11", "Z12", "Z13", "Z14", "Z15", "Z19", "Z20", "M1 Start", "M1 End", "M2 Start", "M2 End", "M3 Start", "M3 End", "M4 Start", "M4 End", "M5 Start", "M5 End", "M6 Start", "M6 End", "M1_2 Enalbe", "M3_4 Enalbe", "M5_6 Enalbe", "M1 Mode", "M2 Mode", "M3 Mode", "M4 Mode", "M5 Mode", "M6 Mode", "M1 Hot Water Target", "M1 Heating Target", "M1 Cooling Target", "M2 Hot Water Target", "M2 Heating Target", "M2 Cooling Target", "M3 Hot Water Target", "M3 Heating Target", "M3 Cooling Target", "M4 Hot Water Target", "M4 Heating Target", "M4 Cooling Target", "M5 Hot Water Target", "M5 Heating Target", "M5 Cooling Target", "M6 Hot Water Target", "M6 Heating Target", "M6 Cooling Target", "M1 Max. Power", "M2 Max. Power", "M3 Max. Power", "M4 Max. Power", "M5 Max. Power", "M6 Max. Power", "SG01", "SG Status", "SG02", "SG03", "SG04", "SG05", "SG06", "SG07", "SG08"]}' \
-	-X POST $cloudurl/app/device/getDataByCode?lang=en > $path/tmp/info
-
-	power=`cat $path/tmp/info | jq '.objectResult[] | select(.code=="Power")' | jq -r '.value'`
-	readtemp=`cat $path/tmp/info | jq '.objectResult[] | select(.code=="R02")' | jq -r '.value'`
-	suctiontemp=`cat $path/tmp/info | jq '.objectResult[] | select(.code=="T01")' | jq -r '.value'`
-	inlettemp=`cat $path/tmp/info | jq '.objectResult[] | select(.code=="T02")' | jq -r '.value'`
-	outlettemp=`cat $path/tmp/info | jq '.objectResult[] | select(.code=="T03")' | jq -r '.value'`
-	coiltemp=`cat $path/tmp/info | jq '.objectResult[] | select(.code=="T04")' | jq -r '.value'`
-	ambienttemp=`cat $path/tmp/info | jq '.objectResult[] | select(.code=="T05")' | jq -r '.value'`
-	mode=`cat $path/tmp/info | jq '.objectResult[] | select(.code=="Mode")' | jq -r '.value'`
-	silent=`cat $path/tmp/info | jq '.objectResult[] | select(.code=="Manual-mute")' | jq -r '.value'`
-	current=`cat $path/tmp/info | jq '.objectResult[] | select(.code=="InputCurrent1")' | jq -r '.value'`
-
-mosquitto_status()
+hash_password()
 {
-	        mosquitto_pub -r -h $mqtt -p $mqttport -u "$mqttuser" -P "$mqttpass"  \
-                -m "${2}" \
-                -t "homeassistant/$1/"$name"_$3/state"
+	local raw="$1"
+
+	if [[ "$raw" =~ ^[0-9a-fA-F]{32}$ ]]; then
+		printf '%s' "$raw" | tr '[:upper:]' '[:lower:]'
+	else
+		printf '%s' "$raw" | openssl dgst -md5 | awk '{print $2}'
+	fi
 }
 
-	mosquitto_status sensor $readtemp readtemp
-	mosquitto_status sensor $inlettemp inlet
-	mosquitto_status sensor $outlettemp outlet
-	mosquitto_status sensor $ambienttemp ambient
-	mosquitto_status sensor $coiltemp coil
-	mosquitto_status sensor $suctiontemp suction
-	mosquitto_status sensor $current current
+curl_json()
+{
+	local url="$1"
+	local payload="${2:-}"
+	local token_header="${3:-}"
+	local -a cmd
 
-	if [[ $silent = "0" ]];then
+	cmd=(curl -s -H "Content-Type: application/json; charset=utf-8" -X POST)
 
-		mosquitto_status binary_sensor OFF silent
-
-	elif [[ $silent = "1" ]];then
-		mosquitto_status binary_sensor ON silent
+	if [[ -n "$token_header" ]]; then
+		cmd+=(-H "x-token: $token_header")
 	fi
 
-
-	if [[ $power = "0" ]];then
-		mosquitto_status sensor off mode_state
-		mosquitto_status binary_sensor OFF power
-
-	elif [[ $power = "1" ]];then
-		mosquitto_status binary_sensor ON power
-		if [[ $mode = "0" ]];then
-			mosquitto_status sensor cool mode_state
-		elif [[ $mode = "1" ]];then
-			mosquitto_status sensor heat mode_state
-		elif [[ $mode = "2" ]];then
-			mosquitto_status sensor auto mode_state
-		fi
+	if [[ -n "$payload" ]]; then
+		cmd+=(-d "$payload")
 	fi
 
-#control
+	cmd+=("$url")
+	"${cmd[@]}"
+}
 
-elif [[ $1 = "on" ]]; then
-	power 1
+app_url()
+{
+	printf '%s/app/%s?lang=%s' "$cloudurl" "$1" "$lang"
+}
 
-elif [[ $1 = "off" ]]; then
-	power 0
+write_file()
+{
+	printf '%s\n' "$2" > "$1"
+}
 
-elif [[ $1 = "temp" ]]; then
-	temp=$2
-	curl -s -H "Content-Type: application/json; charset=utf-8" \
-	-H "x-token: $token" \
-	-d '{"param":[{"deviceCode":"'$device'","protocolCode":"R02","value":"'$temp'"},{"deviceCode":"'$device'","protocolCode":"R02","value":"'$temp'"}]}' \
-	-X POST $cloudurl/app/device/control?lang=en
+cache_is_fresh()
+{
+	[ -f "$token_file" ] && [ -f "$device_file" ] && [[ "$(find "$token_file" -mmin -1440 | wc -l | tr -d ' ')" -ge 1 ]]
+}
 
-elif [[ $1 = "silent" ]]; then
-	if [[ $2 = "ON" ]];then
-		mode="1"
-	elif [[ $2 = "OFF" ]];then
-		mode="0"
+load_cache()
+{
+	token=$(cat "$token_file")
+	device=$(cat "$device_file")
+}
+
+save_cache()
+{
+	write_file "$token_file" "$token"
+	write_file "$device_file" "$device"
+}
+
+load_protocol_codes_json()
+{
+	if [[ -z "$protocol_codes_json" ]]; then
+		protocol_codes_json=$(jq -Rs 'split("\n") | map(select(length > 0 and (startswith("#") | not)))' "$protocol_codes_file")
 	fi
-	curl -s -H "Content-Type: application/json; charset=utf-8" \
-	-H "x-token: $token" \
-	-d '{"param":[{"deviceCode":"'$device'","protocolCode":"Timer_Mute_On_En","value":"'$mode'"}]}' \
-	-X POST $cloudurl/app/device/control?lang=en
 
-elif [[ $1 = "mode" ]]; then
+	printf '%s' "$protocol_codes_json"
+}
 
-	mode()
-	{
-		curl -s -H "Content-Type: application/json; charset=utf-8" \
-                -H "x-token: $token" \
-                -d '{"param":[{"deviceCode":"'$device'","protocolCode":"Mode","value":"'$mode'"}]}' \
-                -X POST $cloudurl/app/device/control?lang=en
-	}
+refresh_auth()
+{
+	local login_payload
+	local login_response
+	local device_response
 
-	if [[ $2 = "heat" ]];then
-		mode="1"
-		mode
+	require_setting "$username" "username"
+	require_setting "$password" "password"
 
-	elif [[ $2 = "cool" ]];then
-		mode="0"
-		mode
+	login_payload=$(jq -nc \
+		--arg password "$password_hash" \
+		--arg userName "$username" \
+		--arg appId "$app_id" \
+		'{
+			password: $password,
+			loginSource: "IOS",
+			areaCode: "en",
+			appId: $appId,
+			type: "2",
+			userName: $userName
+		}')
 
-	elif [[ $2 = "auto" ]];then
-		mode="2"
-		mode
+	login_response=$(curl_json "$(app_url "user/login")" "$login_payload")
+	token=$(jq -r '.objectResult."x-token" // empty' <<<"$login_response")
+
+	if [[ -z "$token" ]]; then
+		echo "Login failed" >&2
+		jq . <<<"$login_response" >&2
+		exit 1
 	fi
-fi
 
+	device_response=$(curl_json "$(app_url "device/deviceList")" "" "$token")
+	device=$(jq -r '.objectResult[0].deviceCode // .objectResult[0].device_code // empty' <<<"$device_response")
+
+	if [[ -z "$device" ]]; then
+		echo "Device lookup failed" >&2
+		jq . <<<"$device_response" >&2
+		exit 1
+	fi
+
+	save_cache
+}
+
+ensure_auth()
+{
+	if [[ -n "$token" && -n "$device" ]]; then
+		return
+	fi
+
+	if cache_is_fresh; then
+		load_cache
+	else
+		refresh_auth
+	fi
+}
+
+api_post()
+{
+	local endpoint="$1"
+	local payload="${2:-}"
+	local response
+	local error_code
+
+	ensure_auth
+	response=$(curl_json "$(app_url "$endpoint")" "$payload" "$token")
+	error_code=$(jq -r '.error_code // empty' <<<"$response")
+
+	if [[ "$error_code" == "-100" ]]; then
+		refresh_auth
+		response=$(curl_json "$(app_url "$endpoint")" "$payload" "$token")
+	fi
+
+	printf '%s' "$response"
+}
+
+mqtt_publish()
+{
+	local topic="$1"
+	local payload="$2"
+	local -a cmd
+
+	require_setting "$mqtt" "mqttserver"
+	require_setting "$mqttport" "mqttport"
+
+	cmd=(mosquitto_pub -r -h "$mqtt" -p "$mqttport" -t "$topic" -m "$payload")
+
+	if [[ -n "$mqttuser" && "$mqttuser" != "none" ]]; then
+		cmd+=(-u "$mqttuser")
+	fi
+
+	if [[ -n "$mqttpass" && "$mqttpass" != "none" ]]; then
+		cmd+=(-P "$mqttpass")
+	fi
+
+	"${cmd[@]}"
+}
+
+publish_state()
+{
+	mqtt_publish "homeassistant/$1/${name}_$2/state" "$3"
+}
+
+publish_discovery()
+{
+	mqtt_publish "homeassistant/$1/${name}_$2/config" "$3"
+}
+
+clear_discovery()
+{
+	publish_discovery "$1" "$2" ""
+}
+
+publish_basic_discovery()
+{
+	local component="$1"
+	local object_id="$2"
+	local label="$3"
+	local payload
+
+	payload=$(jq -nc \
+		--arg name "$name $label" \
+		--arg state_topic "homeassistant/$component/${name}_$object_id/state" \
+		'{name: $name, state_topic: $state_topic}')
+
+	publish_discovery "$component" "$object_id" "$payload"
+}
+
+publish_measure_discovery()
+{
+	local component="$1"
+	local object_id="$2"
+	local label="$3"
+	local device_class="$4"
+	local unit="$5"
+	local payload
+
+	payload=$(jq -nc \
+		--arg name "$name $label" \
+		--arg state_topic "homeassistant/$component/${name}_$object_id/state" \
+		'{name: $name, state_topic: $state_topic}')
+
+	if [[ -n "$device_class" ]]; then
+		payload=$(jq -c --arg device_class "$device_class" '. + {device_class: $device_class}' <<<"$payload")
+	fi
+
+	if [[ -n "$unit" ]]; then
+		payload=$(jq -c --arg unit_of_measurement "$unit" '. + {unit_of_measurement: $unit_of_measurement}' <<<"$payload")
+	fi
+
+	publish_discovery "$component" "$object_id" "$payload"
+}
+
+publish_switch_discovery()
+{
+	local payload
+
+	payload=$(jq -nc \
+		--arg name "$name Silent" \
+		--arg command_topic "homeassistant/switch/${name}_silent/set" \
+		--arg state_topic "homeassistant/binary_sensor/${name}_silent/state" \
+		'{
+			name: $name,
+			command_topic: $command_topic,
+			state_topic: $state_topic
+		}')
+
+	mqtt_publish "homeassistant/switch/${name}_silent/config" "$payload"
+}
+
+publish_climate_discovery()
+{
+	local payload
+
+	payload=$(jq -nc \
+		--arg name "$name" \
+		--arg current_temperature_topic "homeassistant/sensor/${name}_inlet/state" \
+		--arg mode_command_topic "homeassistant/climate/${name}/mode/set" \
+		--arg mode_state_topic "homeassistant/sensor/${name}_mode_state/state" \
+		--arg temperature_command_topic "homeassistant/climate/${name}/temperature/set" \
+		--arg temperature_state_topic "homeassistant/sensor/${name}_readtemp/state" \
+		'{
+			name: $name,
+			current_temperature_topic: $current_temperature_topic,
+			mode_command_topic: $mode_command_topic,
+			mode_state_topic: $mode_state_topic,
+			temperature_command_topic: $temperature_command_topic,
+			temperature_state_topic: $temperature_state_topic,
+			temperature_unit: "C",
+			min_temp: "15",
+			max_temp: "55",
+			temp_step: "0.5",
+			modes: ["off", "heat", "cool", "auto"]
+		}')
+
+	mqtt_publish "homeassistant/climate/$name/config" "$payload"
+}
+
+device_value()
+{
+	local file="$1"
+	local code="$2"
+
+	jq -r --arg code "$code" '[.objectResult[]? | select(.code == $code) | .value][0] // empty' "$file"
+}
+
+binary_state()
+{
+	case "$1" in
+		1|true|TRUE|ON|on) echo ON ;;
+		*) echo OFF ;;
+	esac
+}
+
+mode_state()
+{
+	local power="$1"
+	local mode="$2"
+
+	if [[ "$power" != "1" ]]; then
+		echo off
+		return
+	fi
+
+	case "$mode" in
+		0) echo cool ;;
+		1) echo heat ;;
+		2) echo auto ;;
+		*) echo unknown ;;
+	esac
+}
+
+control_payload()
+{
+	jq -nc \
+		--arg deviceCode "$device" \
+		--arg protocolCode "$1" \
+		--arg value "$2" \
+		'{
+			param: [
+				{
+					deviceCode: $deviceCode,
+					protocolCode: $protocolCode,
+					value: $value
+				}
+			]
+		}'
+}
+
+set_protocol()
+{
+	local response
+
+	response=$(api_post "device/control" "$(control_payload "$1" "$2")")
+	jq . <<<"$response"
+}
+
+install_entities()
+{
+	publish_basic_discovery sensor status "Status"
+	publish_basic_discovery binary_sensor power "Power"
+	publish_basic_discovery binary_sensor silent "Silent"
+	publish_measure_discovery sensor settemp "Settemp" temperature "°C"
+	publish_measure_discovery sensor readtemp "Readtemp" temperature "°C"
+	publish_measure_discovery sensor dwhtemp "DWHtemp" temperature "°C"
+	publish_measure_discovery sensor inlet "Inlet" temperature "°C"
+	publish_measure_discovery sensor outlet "Outlet" temperature "°C"
+	publish_basic_discovery sensor mode_state "Mode State"
+	publish_basic_discovery sensor mode_set "Mode Set"
+	publish_basic_discovery sensor error_msg "Error msg"
+	publish_basic_discovery sensor is_fault "Is fault"
+	publish_measure_discovery sensor ambient "Ambient" temperature "°C"
+	publish_measure_discovery sensor coil "Coil" temperature "°C"
+	publish_measure_discovery sensor suction "Suction" temperature "°C"
+	publish_measure_discovery sensor current "Current" "" ""
+	publish_switch_discovery
+	publish_climate_discovery
+}
+
+uninstall_entities()
+{
+	clear_discovery sensor status
+	clear_discovery binary_sensor power
+	clear_discovery binary_sensor silent
+	clear_discovery sensor settemp
+	clear_discovery sensor readtemp
+	clear_discovery sensor dwhtemp
+	clear_discovery sensor inlet
+	clear_discovery sensor outlet
+	clear_discovery sensor mode_state
+	clear_discovery sensor mode_set
+	clear_discovery sensor error_msg
+	clear_discovery sensor is_fault
+	clear_discovery sensor ambient
+	clear_discovery sensor coil
+	clear_discovery sensor suction
+	clear_discovery sensor current
+	mqtt_publish "homeassistant/switch/${name}_silent/config" ""
+	mqtt_publish "homeassistant/climate/$name/config" ""
+}
+
+publish_status()
+{
+	local payload
+	local response
+	local online
+	local is_fault
+	local fault_message
+	local fault_response
+
+	payload=$(jq -nc --arg deviceCode "$device" '{deviceCode: $deviceCode}')
+	response=$(api_post "device/getDeviceStatus" "$payload")
+	write_file "$status_file" "$response"
+
+	online=$(jq -r '.objectResult.status // empty' "$status_file")
+	is_fault=$(jq -r '.objectResult.is_fault // empty' "$status_file")
+	fault_message="No Error"
+
+	if [[ "$is_fault" == "true" ]]; then
+		fault_response=$(api_post "device/getFaultDataByDeviceCode" "$payload")
+		write_file "$fault_file" "$fault_response"
+		fault_message=$(jq -r '[.objectResult[]?.description][0] // "Fault details unavailable"' "$fault_file")
+	fi
+
+	publish_state sensor status "$online"
+	publish_state sensor is_fault "$is_fault"
+	publish_state sensor error_msg "$fault_message"
+}
+
+publish_info()
+{
+	local payload
+	local response
+	local codes_json
+	local power
+	local target_temp
+	local suction_temp
+	local inlet_temp
+	local outlet_temp
+	local coil_temp
+	local ambient_temp
+	local mode
+	local silent
+	local current
+	local dwh_temp
+	local current_mode
+
+	codes_json=$(load_protocol_codes_json)
+	payload=$(jq -nc \
+		--arg deviceCode "$device" \
+		--arg appId "$app_id" \
+		--argjson protocalCodes "$codes_json" \
+		'{
+			deviceCode: $deviceCode,
+			appId: $appId,
+			protocalCodes: $protocalCodes
+		}')
+
+	response=$(api_post "device/getDataByCode" "$payload")
+	write_file "$info_file" "$response"
+
+	power=$(device_value "$info_file" "Power")
+	target_temp=$(device_value "$info_file" "R02")
+	suction_temp=$(device_value "$info_file" "T01")
+	inlet_temp=$(device_value "$info_file" "T02")
+	outlet_temp=$(device_value "$info_file" "T03")
+	coil_temp=$(device_value "$info_file" "T04")
+	ambient_temp=$(device_value "$info_file" "T05")
+	mode=$(device_value "$info_file" "Mode")
+	silent=$(device_value "$info_file" "Manual-mute")
+	current=$(device_value "$info_file" "InputCurrent1")
+	dwh_temp=$(device_value "$info_file" "T08")
+	current_mode=$(mode_state "$power" "$mode")
+
+	publish_state sensor settemp "$target_temp"
+	publish_state sensor readtemp "$target_temp"
+	publish_state sensor inlet "$inlet_temp"
+	publish_state sensor outlet "$outlet_temp"
+	publish_state sensor ambient "$ambient_temp"
+	publish_state sensor coil "$coil_temp"
+	publish_state sensor suction "$suction_temp"
+	publish_state sensor current "$current"
+	publish_state sensor dwhtemp "$dwh_temp"
+	publish_state sensor mode_state "$current_mode"
+	publish_state sensor mode_set "$current_mode"
+	publish_state binary_sensor silent "$(binary_state "$silent")"
+	publish_state binary_sensor power "$(binary_state "$power")"
+
+	printf 'DWH %s - Heat temp %s\n' "$dwh_temp" "$target_temp"
+}
+
+test_protocol()
+{
+	local payload
+	local response
+
+	payload=$(jq -nc \
+		--arg deviceCode "$device" \
+		--arg protocolCode "$1" \
+		'{
+			deviceCode: $deviceCode,
+			protocolCode: [$protocolCode]
+		}')
+
+	response=$(api_post "device/getDataByCode" "$payload")
+	write_file "$test_file" "$response"
+	jq . "$test_file"
+}
+
+set_mode()
+{
+	case "$1" in
+		heat) set_protocol "Mode" "1" ;;
+		cool) set_protocol "Mode" "0" ;;
+		auto) set_protocol "Mode" "2" ;;
+		*)
+			echo "Usage: $0 mode {heat|cool|auto}" >&2
+			exit 1
+			;;
+	esac
+}
+
+set_silent()
+{
+	local state
+
+	state=$(printf '%s' "$1" | tr '[:lower:]' '[:upper:]')
+
+	case "$state" in
+		ON) set_protocol "Timer_Mute_On_En" "1" ;;
+		OFF) set_protocol "Timer_Mute_On_En" "0" ;;
+		*)
+			echo "Usage: $0 silent {ON|OFF}" >&2
+			exit 1
+			;;
+	esac
+}
+
+usage()
+{
+	cat <<EOF
+Usage: $0 <command> [value]
+
+Commands:
+  install
+  uninstall
+  status
+  info
+  test <protocolCode>
+  on
+  off
+  temp <value>
+  dwhtemp <value>
+  setdwhtemp <value>
+  silent <ON|OFF>
+  mode <heat|cool|auto>
+EOF
+}
+
+mkdir -p "$cache_dir"
+
+username=$(setting username)
+password=$(setting password)
+mqtt=$(setting mqttserver)
+mqttuser=$(setting mqttuser)
+mqttpass=$(setting mqttpass)
+mqttport=$(setting mqttport)
+name=$(setting hassname)
+password_hash=$(hash_password "$password")
+protocol_codes_json=""
+token=""
+device=""
+
+command="${1:-}"
+value="${2:-}"
+
+case "$command" in
+	install)
+		install_entities
+		;;
+	uninstall)
+		uninstall_entities
+		;;
+	status)
+		ensure_auth
+		publish_status
+		;;
+	info)
+		ensure_auth
+		publish_info
+		;;
+	test)
+		require_setting "$value" "protocolCode"
+		ensure_auth
+		test_protocol "$value"
+		;;
+	on)
+		ensure_auth
+		set_protocol "Power" "1"
+		;;
+	off)
+		ensure_auth
+		set_protocol "Power" "0"
+		;;
+	temp)
+		require_setting "$value" "temperature"
+		ensure_auth
+		set_protocol "R02" "$value"
+		;;
+	dwhtemp|setdwhtemp)
+		require_setting "$value" "DWH temperature"
+		ensure_auth
+		set_protocol "R01" "$value"
+		;;
+	silent)
+		require_setting "$value" "silent mode"
+		ensure_auth
+		set_silent "$value"
+		;;
+	mode)
+		require_setting "$value" "mode"
+		ensure_auth
+		set_mode "$value"
+		;;
+	*)
+		usage
+		exit 1
+		;;
+esac
