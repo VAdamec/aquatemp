@@ -61,8 +61,11 @@
       "fault_message": {
         "name": "Fault message"
       },
-      "dhw_temperature": {
-        "name": "DHW temperature"
+      "dhw_actual_temperature": {
+        "name": "DHW actual temperature"
+      },
+      "dhw_target_temperature_sensor": {
+        "name": "DHW target temperature"
       },
       "water_inlet_temperature": {
         "name": "Water inlet temperature"
