@@ -2,6 +2,8 @@
 
 Home Assistant custom integration for WarmLink heat pumps.
 
+Current version: `0.2.0`
+
 ## Install with HACS
 
 1. Open HACS in Home Assistant.
