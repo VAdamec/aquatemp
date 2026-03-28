@@ -23,13 +23,38 @@ Current version: `0.3.1`
 
 ## What it creates
 
-- one climate entity for power, mode, and target temperature
-- one number entity for DHW target temperature
-- one switch for silent mode
-- diagnostic and temperature sensors
+- Climate:
+  - `Heat pump`
+    - power on/off
+    - target temperature
+    - preset mode: `water`, `heat`, `dhw`
+- Number:
+  - `DHW target temperature`
+- Select:
+  - `Operating mode`
+- Switch:
+  - `Silent mode`
+- Standard sensors:
+  - `Status`
+  - `Fault message`
+  - `DHW actual temperature`
+  - `DHW target temperature`
+  - `Water inlet temperature`
+  - `Water outlet temperature`
+  - `Ambient temperature`
+  - `Coil temperature`
+  - `Suction temperature`
+  - `Input current`
+- Additional diagnostic sensors available disabled by default:
+  - mute timer on/off values
+  - compensation slope and offset
+  - zone temperatures and targets
+  - smart grid status
+  - fault registers
 
 ## Notes
 
 - This integration connects directly to the WarmLink cloud API.
 - The default polling interval is 30 seconds.
 - The minimum supported polling interval is 20 seconds.
+- Additional diagnostic entities can be enabled manually in Home Assistant if needed.
