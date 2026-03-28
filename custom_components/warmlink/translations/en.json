@@ -49,6 +49,11 @@
         "name": "DHW target temperature"
       }
     },
+    "select": {
+      "operating_mode": {
+        "name": "Operating mode"
+      }
+    },
     "sensor": {
       "status": {
         "name": "Status"

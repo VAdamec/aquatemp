@@ -11,12 +11,11 @@ from .const import DOMAIN
 from .entity import WarmLinkEntity
 from .models import WarmLinkRuntimeData
 
-HVAC_MODE_BY_CODE = {
-    "0": HVACMode.COOL,
-    "1": HVACMode.HEAT,
-    "2": HVACMode.AUTO,
-    # Some newer devices report mode "3" while behaving like heating.
-    "3": HVACMode.HEAT,
+# WarmLink exposes operating modes separately from power state.
+PRESET_MODE_BY_CODE = {
+    "1": "water",
+    "2": "heat",
+    "3": "dhw",
 }
 
 
@@ -33,10 +32,12 @@ class WarmLinkClimateEntity(WarmLinkEntity, ClimateEntity):
     _attr_translation_key = "heatpump"
     _attr_supported_features = (
         ClimateEntityFeature.TARGET_TEMPERATURE
+        | ClimateEntityFeature.PRESET_MODE
         | ClimateEntityFeature.TURN_OFF
         | ClimateEntityFeature.TURN_ON
     )
-    _attr_hvac_modes = [HVACMode.OFF, HVACMode.HEAT, HVACMode.COOL, HVACMode.AUTO]
+    _attr_hvac_modes = [HVACMode.OFF, HVACMode.HEAT]
+    _attr_preset_modes = ["water", "heat", "dhw"]
     _attr_temperature_unit = UnitOfTemperature.CELSIUS
     _attr_target_temperature_step = 0.5
 
@@ -81,8 +82,15 @@ class WarmLinkClimateEntity(WarmLinkEntity, ClimateEntity):
         if data is None or not data.power_on:
             return HVACMode.OFF
 
-        raw_mode = data.value("Mode")
-        return HVAC_MODE_BY_CODE.get(raw_mode, HVACMode.HEAT)
+        return HVACMode.HEAT
+
+    @property
+    def preset_mode(self) -> str | None:
+        data = self.coordinator.data
+        if data is None:
+            return None
+
+        return PRESET_MODE_BY_CODE.get(data.value("Mode"))
 
     @property
     def extra_state_attributes(self) -> dict[str, str | None]:
@@ -106,12 +114,17 @@ class WarmLinkClimateEntity(WarmLinkEntity, ClimateEntity):
         if hvac_mode == HVACMode.OFF:
             await self.runtime_data.api.async_set_power(False)
         else:
-            await self.runtime_data.api.async_set_mode(hvac_mode.value)
+            await self.runtime_data.api.async_set_power(True)
 
         await self.coordinator.async_request_refresh()
 
+    async def async_set_preset_mode(self, preset_mode: str) -> None:
+        await self.runtime_data.api.async_set_mode(preset_mode)
+        await self.coordinator.async_request_refresh()
+
     async def async_turn_on(self) -> None:
-        await self.async_set_hvac_mode(HVACMode.HEAT)
+        await self.runtime_data.api.async_set_power(True)
+        await self.coordinator.async_request_refresh()
 
     async def async_turn_off(self) -> None:
         await self.async_set_hvac_mode(HVACMode.OFF)

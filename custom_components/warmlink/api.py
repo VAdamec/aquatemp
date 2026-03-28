@@ -245,17 +245,20 @@ class WarmLinkApi:
     async def async_set_power(self, enabled: bool) -> None:
         await self._async_control("Power", "1" if enabled else "0")
 
+    async def async_set_mode_code(self, mode_code: str) -> None:
+        await self.async_set_power(True)
+        await self._async_control("Mode", mode_code)
+
     async def async_set_mode(self, mode: str) -> None:
         mode_map = {
-            "cool": "0",
-            "heat": "1",
-            "auto": "2",
+            "water": "1",
+            "heat": "2",
+            "dhw": "3",
         }
         if mode not in mode_map:
             raise WarmLinkApiError(f"Unsupported mode: {mode}")
 
-        await self.async_set_power(True)
-        await self._async_control("Mode", mode_map[mode])
+        await self.async_set_mode_code(mode_map[mode])
 
     async def async_set_target_temperature(self, temperature: float) -> None:
         await self._async_control("R02", f"{temperature:.1f}".rstrip("0").rstrip("."))
