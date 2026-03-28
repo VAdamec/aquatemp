@@ -12,7 +12,7 @@ from homeassistant.const import CONF_PASSWORD, CONF_USERNAME
 from homeassistant.core import callback
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
-from .api import AquaTempApi, AquaTempApiError, AquaTempAuthError
+from .api import WarmLinkApi, WarmLinkApiError, WarmLinkAuthError
 from .const import (
     CONF_DEVICE_CODE,
     CONF_DEVICE_NAME,
@@ -21,23 +21,23 @@ from .const import (
     DOMAIN,
     MIN_SCAN_INTERVAL,
 )
-from .models import AquaTempDevice
+from .models import WarmLinkDevice
 
 LOGGER = logging.getLogger(__name__)
 
 
-class AquaTempConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
+class WarmLinkConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     VERSION = 1
 
     def __init__(self) -> None:
         self._pending_input: dict[str, Any] = {}
-        self._devices: list[AquaTempDevice] = []
+        self._devices: list[WarmLinkDevice] = []
 
     async def async_step_user(self, user_input: dict[str, Any] | None = None):
         errors: dict[str, str] = {}
 
         if user_input is not None:
-            api = AquaTempApi(
+            api = WarmLinkApi(
                 async_get_clientsession(self.hass),
                 user_input[CONF_USERNAME],
                 user_input[CONF_PASSWORD],
@@ -45,13 +45,13 @@ class AquaTempConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
             try:
                 self._devices = await api.async_get_devices()
-            except AquaTempAuthError:
+            except WarmLinkAuthError:
                 errors["base"] = "invalid_auth"
-            except (AquaTempApiError, ClientError):
-                LOGGER.exception("Unable to connect to AquaTemp")
+            except (WarmLinkApiError, ClientError):
+                LOGGER.exception("Unable to connect to WarmLink")
                 errors["base"] = "cannot_connect"
             except Exception:
-                LOGGER.exception("Unexpected error while validating AquaTemp credentials")
+                LOGGER.exception("Unexpected error while validating WarmLink credentials")
                 errors["base"] = "unknown"
             else:
                 if not self._devices:
@@ -105,7 +105,7 @@ class AquaTempConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             errors=errors,
         )
 
-    async def _async_create_entry_for_device(self, device: AquaTempDevice):
+    async def _async_create_entry_for_device(self, device: WarmLinkDevice):
         await self.async_set_unique_id(device.code)
         self._abort_if_unique_id_configured()
 
@@ -121,10 +121,10 @@ class AquaTempConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     @staticmethod
     @callback
     def async_get_options_flow(config_entry: config_entries.ConfigEntry):
-        return AquaTempOptionsFlowHandler(config_entry)
+        return WarmLinkOptionsFlowHandler(config_entry)
 
 
-class AquaTempOptionsFlowHandler(config_entries.OptionsFlow):
+class WarmLinkOptionsFlowHandler(config_entries.OptionsFlow):
     def __init__(self, config_entry: config_entries.ConfigEntry) -> None:
         self.config_entry = config_entry
 
@@ -150,7 +150,7 @@ class AquaTempOptionsFlowHandler(config_entries.OptionsFlow):
         )
 
 
-def _device_label(device: AquaTempDevice) -> str:
+def _device_label(device: WarmLinkDevice) -> str:
     if device.model:
         return f"{device.name} ({device.model})"
     return device.name

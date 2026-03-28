@@ -9,18 +9,18 @@ from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryAuthFailed
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
-from .api import AquaTempApi, AquaTempApiError, AquaTempAuthError
+from .api import WarmLinkApi, WarmLinkApiError, WarmLinkAuthError
 from .const import DOMAIN
-from .models import AquaTempData
+from .models import WarmLinkData
 
 LOGGER = logging.getLogger(__name__)
 
 
-class AquaTempDataUpdateCoordinator(DataUpdateCoordinator[AquaTempData]):
+class WarmLinkDataUpdateCoordinator(DataUpdateCoordinator[WarmLinkData]):
     def __init__(
         self,
         hass: HomeAssistant,
-        api: AquaTempApi,
+        api: WarmLinkApi,
         update_interval_seconds: int,
     ) -> None:
         super().__init__(
@@ -32,10 +32,10 @@ class AquaTempDataUpdateCoordinator(DataUpdateCoordinator[AquaTempData]):
         )
         self.api = api
 
-    async def _async_update_data(self) -> AquaTempData:
+    async def _async_update_data(self) -> WarmLinkData:
         try:
             return await self.api.async_fetch_data()
-        except AquaTempAuthError as err:
+        except WarmLinkAuthError as err:
             raise ConfigEntryAuthFailed(str(err)) from err
-        except (AquaTempApiError, ClientError) as err:
+        except (WarmLinkApiError, ClientError) as err:
             raise UpdateFailed(str(err)) from err

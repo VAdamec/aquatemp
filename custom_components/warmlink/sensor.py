@@ -17,29 +17,29 @@ from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import DOMAIN
-from .entity import AquaTempEntity
-from .models import AquaTempData, AquaTempRuntimeData
+from .entity import WarmLinkEntity
+from .models import WarmLinkData, WarmLinkRuntimeData
 
 
 @dataclass(frozen=True, kw_only=True)
-class AquaTempSensorEntityDescription(SensorEntityDescription):
-    value_fn: Callable[[AquaTempData], Any]
+class WarmLinkSensorEntityDescription(SensorEntityDescription):
+    value_fn: Callable[[WarmLinkData], Any]
 
 
-SENSOR_DESCRIPTIONS: tuple[AquaTempSensorEntityDescription, ...] = (
-    AquaTempSensorEntityDescription(
+SENSOR_DESCRIPTIONS: tuple[WarmLinkSensorEntityDescription, ...] = (
+    WarmLinkSensorEntityDescription(
         key="status",
         translation_key="status",
         entity_category=EntityCategory.DIAGNOSTIC,
         value_fn=lambda data: data.status,
     ),
-    AquaTempSensorEntityDescription(
+    WarmLinkSensorEntityDescription(
         key="fault_message",
         translation_key="fault_message",
         entity_category=EntityCategory.DIAGNOSTIC,
         value_fn=lambda data: data.fault_message,
     ),
-    AquaTempSensorEntityDescription(
+    WarmLinkSensorEntityDescription(
         key="dhw_temperature",
         translation_key="dhw_temperature",
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
@@ -48,7 +48,7 @@ SENSOR_DESCRIPTIONS: tuple[AquaTempSensorEntityDescription, ...] = (
         suggested_display_precision=1,
         value_fn=lambda data: data.float_value("T08"),
     ),
-    AquaTempSensorEntityDescription(
+    WarmLinkSensorEntityDescription(
         key="water_inlet_temperature",
         translation_key="water_inlet_temperature",
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
@@ -57,7 +57,7 @@ SENSOR_DESCRIPTIONS: tuple[AquaTempSensorEntityDescription, ...] = (
         suggested_display_precision=1,
         value_fn=lambda data: data.float_value("T02"),
     ),
-    AquaTempSensorEntityDescription(
+    WarmLinkSensorEntityDescription(
         key="water_outlet_temperature",
         translation_key="water_outlet_temperature",
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
@@ -66,7 +66,7 @@ SENSOR_DESCRIPTIONS: tuple[AquaTempSensorEntityDescription, ...] = (
         suggested_display_precision=1,
         value_fn=lambda data: data.float_value("T03"),
     ),
-    AquaTempSensorEntityDescription(
+    WarmLinkSensorEntityDescription(
         key="ambient_temperature",
         translation_key="ambient_temperature",
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
@@ -75,7 +75,7 @@ SENSOR_DESCRIPTIONS: tuple[AquaTempSensorEntityDescription, ...] = (
         suggested_display_precision=1,
         value_fn=lambda data: data.float_value("T05"),
     ),
-    AquaTempSensorEntityDescription(
+    WarmLinkSensorEntityDescription(
         key="coil_temperature",
         translation_key="coil_temperature",
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
@@ -84,7 +84,7 @@ SENSOR_DESCRIPTIONS: tuple[AquaTempSensorEntityDescription, ...] = (
         suggested_display_precision=1,
         value_fn=lambda data: data.float_value("T04"),
     ),
-    AquaTempSensorEntityDescription(
+    WarmLinkSensorEntityDescription(
         key="suction_temperature",
         translation_key="suction_temperature",
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
@@ -93,7 +93,7 @@ SENSOR_DESCRIPTIONS: tuple[AquaTempSensorEntityDescription, ...] = (
         suggested_display_precision=1,
         value_fn=lambda data: data.float_value("T01"),
     ),
-    AquaTempSensorEntityDescription(
+    WarmLinkSensorEntityDescription(
         key="input_current",
         translation_key="input_current",
         native_unit_of_measurement=UnitOfElectricCurrent.AMPERE,
@@ -110,19 +110,19 @@ async def async_setup_entry(
     entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    runtime_data: AquaTempRuntimeData = hass.data[DOMAIN][entry.entry_id]
+    runtime_data: WarmLinkRuntimeData = hass.data[DOMAIN][entry.entry_id]
     async_add_entities(
-        AquaTempSensor(runtime_data, description) for description in SENSOR_DESCRIPTIONS
+        WarmLinkSensor(runtime_data, description) for description in SENSOR_DESCRIPTIONS
     )
 
 
-class AquaTempSensor(AquaTempEntity, SensorEntity):
-    entity_description: AquaTempSensorEntityDescription
+class WarmLinkSensor(WarmLinkEntity, SensorEntity):
+    entity_description: WarmLinkSensorEntityDescription
 
     def __init__(
         self,
-        runtime_data: AquaTempRuntimeData,
-        description: AquaTempSensorEntityDescription,
+        runtime_data: WarmLinkRuntimeData,
+        description: WarmLinkSensorEntityDescription,
     ) -> None:
         super().__init__(runtime_data, description.key)
         self.entity_description = description

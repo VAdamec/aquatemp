@@ -4,12 +4,12 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from .api import AquaTempApi
-    from .coordinator import AquaTempDataUpdateCoordinator
+    from .api import WarmLinkApi
+    from .coordinator import WarmLinkDataUpdateCoordinator
 
 
 @dataclass(slots=True, frozen=True)
-class AquaTempDevice:
+class WarmLinkDevice:
     code: str
     name: str
     model: str | None = None
@@ -18,19 +18,19 @@ class AquaTempDevice:
 
 
 @dataclass(slots=True, frozen=True)
-class AquaTempField:
+class WarmLinkField:
     value: str | None = None
     range_start: float | None = None
     range_end: float | None = None
 
 
 @dataclass(slots=True, frozen=True)
-class AquaTempData:
-    device: AquaTempDevice
+class WarmLinkData:
+    device: WarmLinkDevice
     status: str
     is_fault: bool
     fault_message: str
-    fields: dict[str, AquaTempField]
+    fields: dict[str, WarmLinkField]
 
     @property
     def online(self) -> bool:
@@ -40,7 +40,7 @@ class AquaTempData:
     def power_on(self) -> bool:
         return self.value("Power") == "1"
 
-    def field(self, code: str) -> AquaTempField | None:
+    def field(self, code: str) -> WarmLinkField | None:
         return self.fields.get(code)
 
     def value(self, code: str) -> str | None:
@@ -67,6 +67,6 @@ class AquaTempData:
 
 
 @dataclass(slots=True)
-class AquaTempRuntimeData:
-    api: AquaTempApi
-    coordinator: AquaTempDataUpdateCoordinator
+class WarmLinkRuntimeData:
+    api: WarmLinkApi
+    coordinator: WarmLinkDataUpdateCoordinator

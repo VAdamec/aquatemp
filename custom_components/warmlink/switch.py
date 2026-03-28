@@ -6,8 +6,8 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import DOMAIN
-from .entity import AquaTempEntity
-from .models import AquaTempRuntimeData
+from .entity import WarmLinkEntity
+from .models import WarmLinkRuntimeData
 
 
 async def async_setup_entry(
@@ -15,14 +15,14 @@ async def async_setup_entry(
     entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    runtime_data: AquaTempRuntimeData = hass.data[DOMAIN][entry.entry_id]
-    async_add_entities([AquaTempSilentSwitch(runtime_data)])
+    runtime_data: WarmLinkRuntimeData = hass.data[DOMAIN][entry.entry_id]
+    async_add_entities([WarmLinkSilentSwitch(runtime_data)])
 
 
-class AquaTempSilentSwitch(AquaTempEntity, SwitchEntity):
+class WarmLinkSilentSwitch(WarmLinkEntity, SwitchEntity):
     _attr_translation_key = "silent"
 
-    def __init__(self, runtime_data: AquaTempRuntimeData) -> None:
+    def __init__(self, runtime_data: WarmLinkRuntimeData) -> None:
         super().__init__(runtime_data, "silent")
 
     @property

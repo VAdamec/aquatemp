@@ -2,8 +2,8 @@
   "config": {
     "step": {
       "user": {
-        "title": "Connect to AquaTemp",
-        "description": "Enter your AquaTemp cloud account details.",
+        "title": "Connect to WarmLink",
+        "description": "Enter your WarmLink cloud account details.",
         "data": {
           "username": "Username",
           "password": "Password or MD5 hash",
@@ -19,19 +19,19 @@
       }
     },
     "error": {
-      "cannot_connect": "Failed to connect to AquaTemp cloud",
+      "cannot_connect": "Failed to connect to WarmLink cloud",
       "invalid_auth": "Invalid username or password",
-      "no_devices": "No AquaTemp devices were found for this account",
+      "no_devices": "No WarmLink devices were found for this account",
       "unknown": "Unexpected error"
     },
     "abort": {
-      "already_configured": "This AquaTemp device is already configured"
+      "already_configured": "This WarmLink device is already configured"
     }
   },
   "options": {
     "step": {
       "init": {
-        "title": "AquaTemp options",
+        "title": "WarmLink options",
         "data": {
           "scan_interval": "Update interval in seconds"
         }

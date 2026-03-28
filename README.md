@@ -1,6 +1,6 @@
-# AquaTemp
+# WarmLink
 
-Home Assistant custom integration for AquaTemp heat pumps.
+Home Assistant custom integration for WarmLink heat pumps.
 
 ## Install with HACS
 
@@ -8,15 +8,15 @@ Home Assistant custom integration for AquaTemp heat pumps.
 2. Open the menu for custom repositories.
 3. Add this repository URL as a custom repository.
 4. Select category `Integration`.
-5. Find `AquaTemp` in HACS and install it.
+5. Find `WarmLink` in HACS and install it.
 6. Restart Home Assistant.
 
 ## Add the integration
 
 1. Go to `Settings -> Devices & Services`.
 2. Select `Add Integration`.
-3. Search for `AquaTemp`.
-4. Enter your AquaTemp cloud username and password.
+3. Search for `WarmLink`.
+4. Enter your WarmLink cloud username and password.
 5. Select your heat pump device.
 
 ## What it creates
@@ -28,6 +28,6 @@ Home Assistant custom integration for AquaTemp heat pumps.
 
 ## Notes
 
-- This integration connects directly to the AquaTemp cloud API.
+- This integration connects directly to the WarmLink cloud API.
 - The default polling interval is 30 seconds.
 - The minimum supported polling interval is 20 seconds.

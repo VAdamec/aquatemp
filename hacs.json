@@ -1,8 +1,8 @@
 {
-  "name": "AquaTemp",
+  "name": "WarmLink",
   "content_in_root": false,
   "domains": [
-    "aquatemp"
+    "warmlink"
   ],
   "render_readme": true
 }

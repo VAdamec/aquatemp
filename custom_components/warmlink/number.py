@@ -7,8 +7,8 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import DOMAIN
-from .entity import AquaTempEntity
-from .models import AquaTempRuntimeData
+from .entity import WarmLinkEntity
+from .models import WarmLinkRuntimeData
 
 
 async def async_setup_entry(
@@ -16,17 +16,17 @@ async def async_setup_entry(
     entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    runtime_data: AquaTempRuntimeData = hass.data[DOMAIN][entry.entry_id]
-    async_add_entities([AquaTempDhwTargetTemperatureNumber(runtime_data)])
+    runtime_data: WarmLinkRuntimeData = hass.data[DOMAIN][entry.entry_id]
+    async_add_entities([WarmLinkDhwTargetTemperatureNumber(runtime_data)])
 
 
-class AquaTempDhwTargetTemperatureNumber(AquaTempEntity, NumberEntity):
+class WarmLinkDhwTargetTemperatureNumber(WarmLinkEntity, NumberEntity):
     _attr_translation_key = "dhw_target_temperature"
     _attr_device_class = NumberDeviceClass.TEMPERATURE
     _attr_native_unit_of_measurement = UnitOfTemperature.CELSIUS
     _attr_native_step = 0.5
 
-    def __init__(self, runtime_data: AquaTempRuntimeData) -> None:
+    def __init__(self, runtime_data: WarmLinkRuntimeData) -> None:
         super().__init__(runtime_data, "dhw_target_temperature")
 
     @property

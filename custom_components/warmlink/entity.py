@@ -4,14 +4,14 @@ from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import DOMAIN, MANUFACTURER
-from .coordinator import AquaTempDataUpdateCoordinator
-from .models import AquaTempRuntimeData
+from .coordinator import WarmLinkDataUpdateCoordinator
+from .models import WarmLinkRuntimeData
 
 
-class AquaTempEntity(CoordinatorEntity[AquaTempDataUpdateCoordinator]):
+class WarmLinkEntity(CoordinatorEntity[WarmLinkDataUpdateCoordinator]):
     _attr_has_entity_name = True
 
-    def __init__(self, runtime_data: AquaTempRuntimeData, unique_suffix: str) -> None:
+    def __init__(self, runtime_data: WarmLinkRuntimeData, unique_suffix: str) -> None:
         super().__init__(runtime_data.coordinator)
         self.runtime_data = runtime_data
         device_code = runtime_data.api.device_code or "unknown"

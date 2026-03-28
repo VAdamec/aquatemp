@@ -8,8 +8,8 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import DOMAIN
-from .entity import AquaTempEntity
-from .models import AquaTempRuntimeData
+from .entity import WarmLinkEntity
+from .models import WarmLinkRuntimeData
 
 HVAC_MODE_BY_CODE = {
     "0": HVACMode.COOL,
@@ -25,11 +25,11 @@ async def async_setup_entry(
     entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    runtime_data: AquaTempRuntimeData = hass.data[DOMAIN][entry.entry_id]
-    async_add_entities([AquaTempClimateEntity(runtime_data)])
+    runtime_data: WarmLinkRuntimeData = hass.data[DOMAIN][entry.entry_id]
+    async_add_entities([WarmLinkClimateEntity(runtime_data)])
 
 
-class AquaTempClimateEntity(AquaTempEntity, ClimateEntity):
+class WarmLinkClimateEntity(WarmLinkEntity, ClimateEntity):
     _attr_translation_key = "heatpump"
     _attr_supported_features = (
         ClimateEntityFeature.TARGET_TEMPERATURE
@@ -40,7 +40,7 @@ class AquaTempClimateEntity(AquaTempEntity, ClimateEntity):
     _attr_temperature_unit = UnitOfTemperature.CELSIUS
     _attr_target_temperature_step = 0.5
 
-    def __init__(self, runtime_data: AquaTempRuntimeData) -> None:
+    def __init__(self, runtime_data: WarmLinkRuntimeData) -> None:
         super().__init__(runtime_data, "climate")
 
     @property

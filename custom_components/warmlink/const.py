@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from homeassistant.const import Platform
 
-DOMAIN = "aquatemp"
-MANUFACTURER = "AquaTemp"
+DOMAIN = "warmlink"
+MANUFACTURER = "WarmLink"
 
 CONF_DEVICE_CODE = "device_code"
 CONF_DEVICE_NAME = "device_name"

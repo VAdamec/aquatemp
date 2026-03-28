@@ -7,20 +7,20 @@ from typing import Any
 from aiohttp import ClientError, ClientResponseError, ClientSession
 
 from .const import APP_ID, CLOUD_URL, LANGUAGE, REQUEST_CODES
-from .models import AquaTempData, AquaTempDevice, AquaTempField
+from .models import WarmLinkData, WarmLinkDevice, WarmLinkField
 
 MD5_RE = re.compile(r"^[0-9a-fA-F]{32}$")
 
 
-class AquaTempApiError(Exception):
-    """Raised when the AquaTemp API returns an error."""
+class WarmLinkApiError(Exception):
+    """Raised when the WarmLink API returns an error."""
 
 
-class AquaTempAuthError(AquaTempApiError):
+class WarmLinkAuthError(WarmLinkApiError):
     """Raised when authentication fails."""
 
 
-class AquaTempApi:
+class WarmLinkApi:
     def __init__(
         self,
         session: ClientSession,
@@ -34,10 +34,10 @@ class AquaTempApi:
         self._password_hash = self._hash_password(password)
         self._device_code = device_code
         self._token: str | None = None
-        self._device: AquaTempDevice | None = None
+        self._device: WarmLinkDevice | None = None
 
     @property
-    def device(self) -> AquaTempDevice | None:
+    def device(self) -> WarmLinkDevice | None:
         return self._device
 
     @property
@@ -72,23 +72,23 @@ class AquaTempApi:
             )
             response.raise_for_status()
         except (ClientError, ClientResponseError) as err:
-            raise AquaTempApiError(f"HTTP error calling {endpoint}: {err}") from err
+            raise WarmLinkApiError(f"HTTP error calling {endpoint}: {err}") from err
 
         try:
             return await response.json(content_type=None)
         except Exception as err:
-            raise AquaTempApiError(f"Invalid JSON returned by {endpoint}") from err
+            raise WarmLinkApiError(f"Invalid JSON returned by {endpoint}") from err
 
     def _raise_for_response_error(self, response: dict[str, Any]) -> None:
         error_code = str(response.get("error_code", "0"))
         if error_code in {"0", "", "None"}:
             return
 
-        message = response.get("error_msg") or f"AquaTemp API error {error_code}"
+        message = response.get("error_msg") or f"WarmLink API error {error_code}"
         if error_code == "-100":
-            raise AquaTempAuthError(message)
+            raise WarmLinkAuthError(message)
 
-        raise AquaTempApiError(message)
+        raise WarmLinkApiError(message)
 
     async def _async_login(self) -> None:
         payload = {
@@ -104,7 +104,7 @@ class AquaTempApi:
 
         token = response.get("objectResult", {}).get("x-token")
         if not token:
-            raise AquaTempAuthError("Login succeeded but no token was returned")
+            raise WarmLinkAuthError("Login succeeded but no token was returned")
 
         self._token = token
 
@@ -120,14 +120,14 @@ class AquaTempApi:
             response = await self._async_post(endpoint, payload, self._token)
             self._raise_for_response_error(response)
             return response
-        except AquaTempAuthError:
+        except WarmLinkAuthError:
             await self._async_login()
             response = await self._async_post(endpoint, payload, self._token)
             self._raise_for_response_error(response)
             return response
 
-    def _parse_devices(self, response: dict[str, Any]) -> list[AquaTempDevice]:
-        devices: list[AquaTempDevice] = []
+    def _parse_devices(self, response: dict[str, Any]) -> list[WarmLinkDevice]:
+        devices: list[WarmLinkDevice] = []
 
         for raw_device in response.get("objectResult") or []:
             code = raw_device.get("deviceCode") or raw_device.get("device_code")
@@ -142,7 +142,7 @@ class AquaTempApi:
                 or code
             )
             devices.append(
-                AquaTempDevice(
+                WarmLinkDevice(
                     code=code,
                     name=name,
                     model=raw_device.get("custModel") or raw_device.get("model"),
@@ -153,15 +153,15 @@ class AquaTempApi:
 
         return devices
 
-    async def async_get_devices(self) -> list[AquaTempDevice]:
+    async def async_get_devices(self) -> list[WarmLinkDevice]:
         response = await self._async_request("device/deviceList")
         return self._parse_devices(response)
 
-    async def _async_ensure_device(self) -> AquaTempDevice:
+    async def _async_ensure_device(self) -> WarmLinkDevice:
         devices = await self.async_get_devices()
 
         if not devices:
-            raise AquaTempApiError("No AquaTemp devices were found on this account")
+            raise WarmLinkApiError("No WarmLink devices were found on this account")
 
         if self._device_code is None:
             self._device = devices[0]
@@ -173,9 +173,9 @@ class AquaTempApi:
                 self._device = device
                 return device
 
-        raise AquaTempApiError(f"Configured device {self._device_code} was not found")
+        raise WarmLinkApiError(f"Configured device {self._device_code} was not found")
 
-    async def async_fetch_data(self) -> AquaTempData:
+    async def async_fetch_data(self) -> WarmLinkData:
         device = await self._async_ensure_device()
         payload = {"deviceCode": device.code}
         status_response = await self._async_request("device/getDeviceStatus", payload)
@@ -199,7 +199,7 @@ class AquaTempApi:
                     "device/getFaultDataByDeviceCode",
                     payload,
                 )
-            except AquaTempApiError:
+            except WarmLinkApiError:
                 fault_message = "Fault details unavailable"
             else:
                 descriptions = [
@@ -209,19 +209,19 @@ class AquaTempApi:
                 ]
                 fault_message = descriptions[0] if descriptions else "Fault details unavailable"
 
-        fields: dict[str, AquaTempField] = {}
+        fields: dict[str, WarmLinkField] = {}
         for item in info_response.get("objectResult") or []:
             code = item.get("code")
             if not code:
                 continue
 
-            fields[code] = AquaTempField(
+            fields[code] = WarmLinkField(
                 value=item.get("value"),
                 range_start=_parse_float(item.get("rangeStart")),
                 range_end=_parse_float(item.get("rangeEnd")),
             )
 
-        return AquaTempData(
+        return WarmLinkData(
             device=device,
             status=str(status_payload.get("status", "UNKNOWN")),
             is_fault=is_fault,
@@ -252,7 +252,7 @@ class AquaTempApi:
             "auto": "2",
         }
         if mode not in mode_map:
-            raise AquaTempApiError(f"Unsupported mode: {mode}")
+            raise WarmLinkApiError(f"Unsupported mode: {mode}")
 
         await self.async_set_power(True)
         await self._async_control("Mode", mode_map[mode])
