@@ -1,0 +1,87 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connect to AquaTemp",
+        "description": "Enter your AquaTemp cloud account details.",
+        "data": {
+          "username": "Username",
+          "password": "Password or MD5 hash",
+          "scan_interval": "Update interval in seconds"
+        }
+      },
+      "device": {
+        "title": "Select device",
+        "description": "Choose the heat pump to add.",
+        "data": {
+          "device_code": "Device"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Failed to connect to AquaTemp cloud",
+      "invalid_auth": "Invalid username or password",
+      "no_devices": "No AquaTemp devices were found for this account",
+      "unknown": "Unexpected error"
+    },
+    "abort": {
+      "already_configured": "This AquaTemp device is already configured"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "AquaTemp options",
+        "data": {
+          "scan_interval": "Update interval in seconds"
+        }
+      }
+    }
+  },
+  "entity": {
+    "climate": {
+      "heatpump": {
+        "name": "Heat pump"
+      }
+    },
+    "number": {
+      "dhw_target_temperature": {
+        "name": "DHW target temperature"
+      }
+    },
+    "sensor": {
+      "status": {
+        "name": "Status"
+      },
+      "fault_message": {
+        "name": "Fault message"
+      },
+      "dhw_temperature": {
+        "name": "DHW temperature"
+      },
+      "water_inlet_temperature": {
+        "name": "Water inlet temperature"
+      },
+      "water_outlet_temperature": {
+        "name": "Water outlet temperature"
+      },
+      "ambient_temperature": {
+        "name": "Ambient temperature"
+      },
+      "coil_temperature": {
+        "name": "Coil temperature"
+      },
+      "suction_temperature": {
+        "name": "Suction temperature"
+      },
+      "input_current": {
+        "name": "Input current"
+      }
+    },
+    "switch": {
+      "silent": {
+        "name": "Silent mode"
+      }
+    }
+  }
+}

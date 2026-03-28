@@ -1,0 +1,4 @@
+.idea/
+tmp/
+custom_components/**/__pycache__/
+*.pyc

@@ -1,0 +1,13 @@
+{
+  "domain": "aquatemp",
+  "name": "AquaTemp",
+  "codeowners": [
+    "@VAdamec"
+  ],
+  "config_flow": true,
+  "documentation": "https://github.com/VAdamec/aquatemp",
+  "issue_tracker": "https://github.com/VAdamec/aquatemp/issues",
+  "iot_class": "cloud_polling",
+  "integration_type": "device",
+  "version": "0.1.0"
+}

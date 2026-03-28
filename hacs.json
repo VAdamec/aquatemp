@@ -1,0 +1,8 @@
+{
+  "name": "AquaTemp",
+  "content_in_root": false,
+  "domains": [
+    "aquatemp"
+  ],
+  "render_readme": true
+}
