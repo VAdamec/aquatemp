@@ -1,8 +1,5 @@
 {
   "name": "WarmLink",
   "content_in_root": false,
-  "domains": [
-    "warmlink"
-  ],
   "render_readme": true
 }
