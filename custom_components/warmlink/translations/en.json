@@ -81,6 +81,60 @@
       },
       "input_current": {
         "name": "Input current"
+      },
+      "mute_timer_on_hour": {
+        "name": "Mute timer on hour"
+      },
+      "mute_timer_on_minute": {
+        "name": "Mute timer on minute"
+      },
+      "mute_timer_off_enabled": {
+        "name": "Mute timer off enabled"
+      },
+      "mute_timer_off_hour": {
+        "name": "Mute timer off hour"
+      },
+      "mute_timer_off_minute": {
+        "name": "Mute timer off minute"
+      },
+      "compensation_slope": {
+        "name": "Compensation slope"
+      },
+      "compensation_offset": {
+        "name": "Compensation offset"
+      },
+      "zone_1_room_temperature": {
+        "name": "Zone 1 room temperature"
+      },
+      "zone_2_room_temperature": {
+        "name": "Zone 2 room temperature"
+      },
+      "zone_2_mixing_temperature": {
+        "name": "Zone 2 mixing temperature"
+      },
+      "zone_2_water_target": {
+        "name": "Zone 2 water target"
+      },
+      "zone_2_curve_slope": {
+        "name": "Zone 2 curve slope"
+      },
+      "zone_2_curve_offset": {
+        "name": "Zone 2 curve offset"
+      },
+      "smart_grid_mode": {
+        "name": "Smart grid mode"
+      },
+      "smart_grid_status": {
+        "name": "Smart grid status"
+      },
+      "fault_register_1": {
+        "name": "Fault register 1"
+      },
+      "fault_register_5": {
+        "name": "Fault register 5"
+      },
+      "fault_register_6": {
+        "name": "Fault register 6"
       }
     },
     "switch": {

@@ -26,6 +26,38 @@ class WarmLinkSensorEntityDescription(SensorEntityDescription):
     value_fn: Callable[[WarmLinkData], Any]
 
 
+def diagnostic_sensor(
+    key: str,
+    translation_key: str,
+    value_fn: Callable[[WarmLinkData], Any],
+) -> WarmLinkSensorEntityDescription:
+    return WarmLinkSensorEntityDescription(
+        key=key,
+        translation_key=translation_key,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
+        value_fn=value_fn,
+    )
+
+
+def diagnostic_temperature_sensor(
+    key: str,
+    translation_key: str,
+    code: str,
+) -> WarmLinkSensorEntityDescription:
+    return WarmLinkSensorEntityDescription(
+        key=key,
+        translation_key=translation_key,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        device_class=SensorDeviceClass.TEMPERATURE,
+        state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=1,
+        value_fn=lambda data: data.float_value(code),
+    )
+
+
 SENSOR_DESCRIPTIONS: tuple[WarmLinkSensorEntityDescription, ...] = (
     WarmLinkSensorEntityDescription(
         key="status",
@@ -101,6 +133,96 @@ SENSOR_DESCRIPTIONS: tuple[WarmLinkSensorEntityDescription, ...] = (
         state_class=SensorStateClass.MEASUREMENT,
         suggested_display_precision=1,
         value_fn=lambda data: data.float_value("InputCurrent1"),
+    ),
+    diagnostic_sensor(
+        key="mute_timer_on_hour",
+        translation_key="mute_timer_on_hour",
+        value_fn=lambda data: data.value("TimerMuteOnHour"),
+    ),
+    diagnostic_sensor(
+        key="mute_timer_on_minute",
+        translation_key="mute_timer_on_minute",
+        value_fn=lambda data: data.value("TimerMuteOnMinute"),
+    ),
+    diagnostic_sensor(
+        key="mute_timer_off_enabled",
+        translation_key="mute_timer_off_enabled",
+        value_fn=lambda data: data.value("Timer_Mute_Off_En"),
+    ),
+    diagnostic_sensor(
+        key="mute_timer_off_hour",
+        translation_key="mute_timer_off_hour",
+        value_fn=lambda data: data.value("TimerMuteOffHour"),
+    ),
+    diagnostic_sensor(
+        key="mute_timer_off_minute",
+        translation_key="mute_timer_off_minute",
+        value_fn=lambda data: data.value("TimerMuteOffMinute"),
+    ),
+    diagnostic_sensor(
+        key="compensation_slope",
+        translation_key="compensation_slope",
+        value_fn=lambda data: data.float_value("compensate_slope"),
+    ),
+    diagnostic_sensor(
+        key="compensation_offset",
+        translation_key="compensation_offset",
+        value_fn=lambda data: data.float_value("compensate_offset"),
+    ),
+    diagnostic_temperature_sensor(
+        key="zone_1_room_temperature",
+        translation_key="zone_1_room_temperature",
+        code="Zone 1 Room Temp",
+    ),
+    diagnostic_temperature_sensor(
+        key="zone_2_room_temperature",
+        translation_key="zone_2_room_temperature",
+        code="Zone 2 Room Temp",
+    ),
+    diagnostic_temperature_sensor(
+        key="zone_2_mixing_temperature",
+        translation_key="zone_2_mixing_temperature",
+        code="Zone 2 Mixing Temp",
+    ),
+    diagnostic_temperature_sensor(
+        key="zone_2_water_target",
+        translation_key="zone_2_water_target",
+        code="Zone 2 Water Target",
+    ),
+    diagnostic_sensor(
+        key="zone_2_curve_slope",
+        translation_key="zone_2_curve_slope",
+        value_fn=lambda data: data.float_value("Zone 2 Cure Slope"),
+    ),
+    diagnostic_sensor(
+        key="zone_2_curve_offset",
+        translation_key="zone_2_curve_offset",
+        value_fn=lambda data: data.float_value("Zone 2 Curve Offset"),
+    ),
+    diagnostic_sensor(
+        key="smart_grid_mode",
+        translation_key="smart_grid_mode",
+        value_fn=lambda data: data.value("SG01"),
+    ),
+    diagnostic_sensor(
+        key="smart_grid_status",
+        translation_key="smart_grid_status",
+        value_fn=lambda data: data.value("SG Status"),
+    ),
+    diagnostic_sensor(
+        key="fault_register_1",
+        translation_key="fault_register_1",
+        value_fn=lambda data: data.value("Fault1"),
+    ),
+    diagnostic_sensor(
+        key="fault_register_5",
+        translation_key="fault_register_5",
+        value_fn=lambda data: data.value("Fault5"),
+    ),
+    diagnostic_sensor(
+        key="fault_register_6",
+        translation_key="fault_register_6",
+        value_fn=lambda data: data.value("Fault6"),
     ),
 )
 
